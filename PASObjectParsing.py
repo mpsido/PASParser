@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from print_debug import *
+from PASParsingException import *
 
 DEBUG_FLAG_PADDING = 1
 DEBUG_FLAG_RANGES = 2 
@@ -16,18 +17,16 @@ class PASParsedTypeInObject:
 		self.objectName = ""
 		self.nameOfField = ""
 		self.typeName = ""
-		self.positionInObject = 0
 		self.arraySize = 0
 		self.size = 0
-		#self.range tuple or list of tubles in case of array
-	
+
 	def __getitem__(self, index):
 		dataRange = (0,0)
 		if self.arraySize > 1:
 			dataRange = self.range[index]
 		elif index > 0:
-			raise IndexError("Trying to read data {0} of type {1} but this is not an array in object {3} at position {4}"
-				.format(index, self.typeName, self.objectName, self.positionInObject))
+			raise IndexError("Trying to read data {0} of type {1} but this is not an array in object {3} name of field {4}"
+				.format(index, self.typeName, self.objectName, self.nameOfField))
 		else:
 			dataRange = self.range
 		return dataRange
@@ -46,7 +45,7 @@ class PASParsedTypeInObject:
 			indexes = []
 			for i in range(0, arraySize):
 				indexes.append( (start_pos, start_pos + size - 1) )
-				start_pos += size #+ 1
+				start_pos += size
 			self.range = indexes
 
 
@@ -57,6 +56,45 @@ class PASParsedObject:
 		self.indexes = [] #list of PASParsedTypeInObject
 		self.spectrum = ""
 		self.objectName = objectName
+
+	def writeFormatedData(self, formatedData):
+		"""transforms the formated data "formatedData" back into raw string """
+		dataString = ""
+		cursor = 0
+		for index in self.indexes:
+			if index.arraySize == 1:
+				padding = index.range[0] - cursor
+				zPad = "{0:"+"<0{0}s".format(padding*2)+"}"
+				if padding > 0:
+					dataString += zPad.format("") + " "
+				dataString += formatedData[index.nameOfField] + " "
+				cursor = index.range[1] + 1
+			else:
+				padding = index.range[0][0] - cursor
+				zPad = "{0:"+"<0{0}s".format(padding*2)+"}"
+				if padding > 0:
+					dataString += zPad.format("") + " "
+				for i in range(0, index.arraySize):
+					dataString += formatedData[index.nameOfField][i] + " "
+				cursor = index.range[index.arraySize - 1][1] + 1
+		return dataString
+
+	def modifyData(self, data, fieldName, newValue, indexInArray=0):
+		"""modifies the field "fieldName" in "data" and gives it the value "newValue" """
+		formatedData = self.readData(data)
+		if fieldName not in formatedData:
+			raise KeyError("Cannot modify field {0} in object {1}: it does not exist".format(fieldName, self.objectName))
+		else:
+			fieldValue = self.at(fieldName)
+			lengthOfField = fieldValue.size*2 #two characters for each byte
+			zPad = "{0:"+"<0{0}s".format(lengthOfField)+"}"
+			if len(newValue) > lengthOfField:
+				raise PASParsingException("Value {0} cannot fit in a data field of length {1}".format(newValue, lengthOfField))
+			if fieldValue.arraySize == 1:
+				formatedData[fieldName] = zPad.format(newValue)
+			else: #data field is an array
+				formatedData[fieldName][indexInArray] = zPad.format(newValue)
+		return self.writeFormatedData(formatedData)
 
 	def readData(self, data):		
 		"""
@@ -76,7 +114,6 @@ class PASParsedObject:
 
 		This function returns a dict object as follows:
 		{'sub0' : 07,'u8IndexBoard' : 01, etc...}
-
 		"""
 		print_debug("Reading object {0} with data {1}".format(self.objectName, data), DEBUG_DATA_READING)
 		formatedData = {}
@@ -120,6 +157,15 @@ class PASParsedObject:
 				.format(index.nameOfField, index.arraySize, index.typeName, index.range[0][0], index.range[index.arraySize - 1][1], 
 					index.size)
 		return description
+
+
+	def at(self, nameOfField):
+		dataField = PASParsedTypeInObject()
+		for index in self.indexes:
+			if index.nameOfField == nameOfField:
+				dataField = index
+				break
+		return dataField
 
 	def __getitem__(self, index):
 		return self.indexes[index]
