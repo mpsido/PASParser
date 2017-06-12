@@ -22,9 +22,11 @@ class PASParsedTypeInObject:
 	it keeps the indexes where the data is stored inside the object and provides tools the read and write the data"""
 	def __init__(self):
 		self.objectName = ""
+		self.nameOfField = ""
 		self.typeName = ""
 		self.positionInObject = 0
 		self.arraySize = 0
+		self.size = 0
 		#self.range tuple or list of tubles in case of array
 	
 	def __getitem__(self, index):
@@ -38,10 +40,12 @@ class PASParsedTypeInObject:
 			dataRange = self.range
 		return dataRange
 
-	def setIndex(self, objectName, typeName, start_pos, size, arraySize):
+	def setIndex(self, objectName, nameOfField, typeName, start_pos, size, arraySize):
 		self.objectName = objectName
+		self.nameOfField = nameOfField
 		self.typeName = typeName
 		self.arraySize = arraySize
+		self.size = size
 		if arraySize == 1:
 			print_debug("adding index {0} {1} {2}".format(typeName, start_pos, start_pos + size), DEBUG_FLAG_RANGES)
 			self.range = (start_pos, start_pos + size - 1)
@@ -63,14 +67,23 @@ class PASParsedObject:
 		self.objectName = objectName
 
 	def __repr__(self):
-		return str(self.indexes)
+		description = "Object: {0}\n".format(self.objectName)
+		for index in self.indexes:
+			if index.arraySize == 1:
+				description += "{0}\t\t: Type: {1} at position {2} to {3} size {4}\n"\
+				.format(index.nameOfField, index.typeName, index.range[0], index.range[1], index.size)
+			else:
+				description += "{0}\t\t: Array {1} elements of type {2} from {3} to {4} each element has a size: {5}\n"\
+				.format(index.nameOfField, index.arraySize, index.typeName, index.range[0][0], index.range[index.arraySize - 1][1], 
+					index.size)
+		return description
 
 	def __getitem__(self, index):
 		return self.indexes[index]
 
-	def addIndex(self, typeName, start_pos, size, arraySize):
+	def addIndex(self, nameOfField, typeName, start_pos, size, arraySize):
 		parsedType = PASParsedTypeInObject()
-		parsedType.setIndex(self.objectName, typeName, start_pos, size, arraySize)
+		parsedType.setIndex(self.objectName, nameOfField, typeName, start_pos, size, arraySize)
 		self.indexes.append(parsedType)
     
 
@@ -135,7 +148,7 @@ class PASObjReader:
 				byteNumber = 0
 				parsedObject = PASParsedObject(objectId)
 				for typeNode in self._PASObjXMLDict[objectId].findall('subindex'): #<subindex name="" type="type_0230" version="03150000">
-					
+					nameOfField = typeNode.get('name')
 					typeName = typeNode.get('type')
 					count = int(typeNode.get('count')) #longueur du tableau
 					pasType = TypeReader.PASTypesDict[typeName]
@@ -151,7 +164,7 @@ class PASObjReader:
 						spectrum += " "
 
 					#fill in parsed object with the type we are currently parsing
-					parsedObject.addIndex(typeName, byteNumber, pasType.size, count)
+					parsedObject.addIndex(nameOfField, typeName, byteNumber, pasType.size, count)
 
 					while count > 0:
 						spectrum += pasType.spectrum.replace('X', letters[l])

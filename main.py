@@ -28,3 +28,7 @@ spectrum = objReader.parseObject("10000", typeReader)
 print(spectrum)
 spectrum = objReader.parseObject("10000", typeReader)
 print(spectrum)
+
+spectrum = objReader.parseObject("30092", typeReader)
+print(spectrum)
+print(objReader.parsedObjects["10000"])

@@ -69,5 +69,22 @@ class Test_PASObjReader(unittest.TestCase):
 			self.assertEqual(self.objReader.parsedObjects["71B00"][1][i], (index,index))
 			index += 1
 
+	def test_30092(self):
+		self.assertEqual( self.objReader.parseObject("30092", self.typeReader)
+			, "AA BB CCCC DDDD EEEE FF 00 GGGGGGGGGGGGGGGGGGGG HHHH")
+
+		self.assertEqual(self.objReader.parsedObjects["30092"][0].range, (0,0))
+		self.assertEqual(self.objReader.parsedObjects["30092"][1][0], (1,1))
+		self.assertEqual(self.objReader.parsedObjects["30092"][2].range, (2,3))
+		self.assertEqual(self.objReader.parsedObjects["30092"][3].range, (4,5))
+		self.assertEqual(self.objReader.parsedObjects["30092"][4].range, (6,7))
+		self.assertEqual(self.objReader.parsedObjects["30092"][5].range, (8,8))
+		self.assertEqual(self.objReader.parsedObjects["30092"][6].range, (10,19))
+		self.assertEqual(self.objReader.parsedObjects["30092"][7].range, (20,21))
+
+
+
+
+
 
 unittest.main()
