@@ -37,7 +37,7 @@ class PASType:
 class PASTypeReader:
 	def __init__(self):
 			self.OD_types = etree.parse("OD_types.xml")
-			self._PASTypesDict = {}
+			self.PASTypesDict = {}
 			self.readTypes()
 
 
@@ -60,7 +60,7 @@ class PASTypeReader:
 				Type.padding = int(elt.get('padding'))
 				Type.xmlNode = elt
 
-				self._PASTypesDict[elt_id] = Type
+				self.PASTypesDict[elt_id] = Type
 				types += Type.name + "\n"
 
 			if len(types) > 0:
