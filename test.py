@@ -10,14 +10,17 @@ import re
 import unittest
 from PASType import *
 from PASObject import *
+from print_debug import *
 
 
 class Test_PASObjReader(unittest.TestCase):
 	def setUp(self):
 		self.typeReader = PASTypeReader() 
 		self.objReader = PASObjReader()
+		set_debug_flags(0)
 
 	def test_10000(self):
+
 		self.assertEqual( self.objReader.parseObject("10000", self.typeReader)
 		, "AA BB CC DD EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE FF GG 000000 HHHHHHHH IIIIII IIIIII IIIIII IIIIII IIIIII IIIIII")
 
@@ -44,6 +47,18 @@ class Test_PASObjReader(unittest.TestCase):
 			self.assertEqual(self.objReader.parsedObjects["10000"][8].range[i], (index,index+2))
 			index += 3
 
+		#Data reading
+		self.assertEqual(self.objReader.parsedObjects["10000"].readData("1B 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 00 03 000000 0B01010A 010110 000000 000000 000000 000000 000000"),
+		{'sub0':'1B',
+		'eEquipType':'01',
+		'u8Number':'02',
+		'xBaseAddress':'0A',
+		'eBoard_slot': ['14','0D','09','00','00','00','00','00','00','00','00','00','00','00','00'],
+		'xEAES_Used':'00',
+		'eVariant':'03',
+		'xSNTPMaster':'0B01010A',
+		'tSubSlotType':['010110','000000','000000','000000','000000','000000']})
+
 	def test_11001(self):
 		self.assertEqual( self.objReader.parseObject("11001", self.typeReader)
 		, "AA BBBBBBBB 00 CCCC DDDD")
@@ -56,6 +71,11 @@ class Test_PASObjReader(unittest.TestCase):
 		self.assertEqual(self.objReader.parsedObjects["74000"][0].range, (0,0))
 		self.assertEqual(self.objReader.parsedObjects["74000"][1].range, (2,33))
 		self.assertEqual(self.objReader.parsedObjects["74000"][2].range, (34,43))
+
+		self.assertEqual(self.objReader.parsedObjects["74000"].readData("02 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"),
+		{'sub0':'02',
+		'xPSEConfig':'606D0C006054D052584D50463863580260096400D00764003200640001010104',
+		'xExtBoardPowerConfig':'00A41011301068ABE000'})
 
 	def test_71B00(self):
 		self.assertEqual( self.objReader.parseObject("71B00", self.typeReader)

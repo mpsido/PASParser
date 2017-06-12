@@ -31,4 +31,7 @@ print(spectrum)
 
 spectrum = objReader.parseObject("30092", typeReader)
 print(spectrum)
-print(objReader.parsedObjects["10000"])
+# print(objReader.parsedObjects["30092"])
+print(objReader.parsedObjects["30092"].readData("07 01 5B6C 0000 0000 00 00 00000000000000000001 0000"))
+print(objReader.parsedObjects["74000"].readData("02 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
+print(objReader.parsedObjects["10000"].readData("1B 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 00 03 000000 0B01010A 010110 000000 000000 000000 000000 000000"))
