@@ -11,17 +11,31 @@ sys.path.append(lib_path)
 import unittest
 
 from PASINIParser import *
+from PASType import *
+from PASObject import *
 
 
 class Test_PASINIParser(unittest.TestCase):
 	def setUp(self):
 		self.iniParser = PASINIParser() 
+		self.typeReader = PASTypeReader() 
+		self.objReader = PASObjReader()
 
 
 	def test_data74000(self):
 		self.iniParser.parse("tests/files","74000")
-		self.assertEqual(self.iniParser.getData(), 
+		data_74000 = self.iniParser.getData()
+		self.assertEqual(data_74000, 
 			'02 00 606D0C006054D052584D50463863580260096400D00764006400F40101010104 00A41011301068ABE000')
+
+		self.objReader.parseObject("74000", self.typeReader)
+		data_74000_modified = self.objReader.parsedObjects["74000"].modifyData(data_74000, "sub0", "04")
+
+		self.iniParser.setData(data_74000_modified)
+
+		data_74000 = self.iniParser.getData()
+		self.assertEqual(data_74000, 
+			'04 00 606D0C006054D052584D50463863580260096400D00764006400F40101010104 00A41011301068ABE000')
 
 
 unittest.main()

@@ -24,5 +24,8 @@ class PASINIParser(ConfigParser.RawConfigParser):
 	def getData(self):
 		return self.get('PAS_OD_WRITE', 'DATA')
 
+	def setData(self, newValue):
+		return self.set('PAS_OD_WRITE', 'DATA', newValue)
+
 
 

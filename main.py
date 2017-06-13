@@ -50,3 +50,5 @@ from PASINIParser import *
 reader_74000 = PASINIParser()
 reader_74000.parse("ECS-ELITE_1_C-1/", "74000")
 print(reader_74000.getData())
+
+print(objReader.parsedObjects["74000"])
