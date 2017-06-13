@@ -1,21 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# helloworld.py
-# Un simple exemple de traditionnel ?Hello World?
-
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+from PyQt4 import QtGui, QtCore
 import sys
 
-def main(args) :
-	app=QApplication(args)
-	button=QPushButton("Hello World !", None)
-	button.show()
-	app.connect(app,SIGNAL("lastWindowClosed()"),app,SLOT("quit()"))
-	app.connect(button, SIGNAL("clicked()"),app,SLOT("quit()"))
+import ui_MainWindow
+
+class Hello(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
+	def __init__(self, parent=None):
+		super(Hello, self).__init__(parent)
+		self.setupUi(self)
+
+	def main(self):
+		self.show()
+
+if __name__=='__main__':
+	app = QtGui.QApplication(sys.argv)
+	imageViewer = Hello()
+	imageViewer.main()
 	app.exec_()
-
-if __name__ == "__main__" :
-   main(sys.argv)
-
