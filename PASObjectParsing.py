@@ -8,7 +8,7 @@ DEBUG_FLAG_PADDING = 1
 DEBUG_FLAG_RANGES = 2 
 DEBUG_DATA_READING = 4
 
-set_debug_flags(DEBUG_DATA_READING)
+set_debug_flags(0)
 
 class PASParsedTypeInObject:
 	"""Class that represents a type stored inside an object: 
@@ -64,23 +64,28 @@ class PASParsedObject:
 		for index in self.indexes:
 			if index.arraySize == 1:
 				padding = index.range[0] - cursor
-				zPad = "{0:"+"<0{0}s".format(padding*2)+"}"
+				zeroPadding = "{0:"+"<0{0}s".format(padding*2)+"}"
 				if padding > 0:
-					dataString += zPad.format("") + " "
+					dataString += zeroPadding.format("") + " "
 				dataString += formatedData[index.nameOfField] + " "
 				cursor = index.range[1] + 1
 			else:
 				padding = index.range[0][0] - cursor
-				zPad = "{0:"+"<0{0}s".format(padding*2)+"}"
+				zeroPadding = "{0:"+"<0{0}s".format(padding*2)+"}"
 				if padding > 0:
-					dataString += zPad.format("") + " "
+					dataString += zeroPadding.format("") + " "
 				for i in range(0, index.arraySize):
 					dataString += formatedData[index.nameOfField][i] + " "
 				cursor = index.range[index.arraySize - 1][1] + 1
+
+		if dataString.endswith(' '):
+			dataString = dataString[:-1]
 		return dataString
 
 	def modifyData(self, data, fieldName, newValue, indexInArray=0):
 		"""modifies the field "fieldName" in "data" and gives it the value "newValue" """
+		if len(newValue) % 2 != 0:
+			newValue = "0" + newValue
 		formatedData = self.readData(data)
 		if fieldName not in formatedData:
 			raise KeyError("Cannot modify field {0} in object {1}: it does not exist".format(fieldName, self.objectName))

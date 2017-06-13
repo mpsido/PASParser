@@ -103,6 +103,25 @@ class Test_PASObjReader(unittest.TestCase):
 		self.assertEqual(self.objReader.parsedObjects["30092"][7].range, (20,21))
 
 
+	def test_modify_1000(self):
+		self.objReader.parseObject("10000", self.typeReader)
+		
+		data_10000 = "1B 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 00 03 000000 0B01010A 010110 000000 000000 000000 000000 000000"
+
+		data_10000_modified = self.objReader.parsedObjects["10000"].modifyData(data_10000, "xEAES_Used", "15")
+		self.assertEqual(data_10000_modified, "1B 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 15 03 000000 0B01010A 010110 000000 000000 000000 000000 000000")
+
+		data_10000_modified = self.objReader.parsedObjects["10000"].modifyData(data_10000_modified, "eBoard_slot", "12", 4)
+		self.assertEqual(data_10000_modified, "1B 01 02 0A 14 0D 09 00 12 00 00 00 00 00 00 00 00 00 00 15 03 000000 0B01010A 010110 000000 000000 000000 000000 000000")
+
+		data_10000_modified = self.objReader.parsedObjects["10000"].modifyData(data_10000_modified, "tSubSlotType", "AA", 0)
+		self.assertEqual(data_10000_modified, "1B 01 02 0A 14 0D 09 00 12 00 00 00 00 00 00 00 00 00 00 15 03 000000 0B01010A AA0000 000000 000000 000000 000000 000000")
+
+		data_10000_modified = self.objReader.parsedObjects["10000"].modifyData(data_10000_modified, "tSubSlotType", "BAC", 0)
+		self.assertEqual(data_10000_modified, "1B 01 02 0A 14 0D 09 00 12 00 00 00 00 00 00 00 00 00 00 15 03 000000 0B01010A 0BAC00 000000 000000 000000 000000 000000")
+
+
+
 
 
 
