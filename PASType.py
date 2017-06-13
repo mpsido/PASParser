@@ -35,10 +35,12 @@ class PASType:
 
 
 class PASTypeReader:
-	def __init__(self):
-			self.OD_types = etree.parse("OD_types.xml")
-			self.PASTypesDict = {}
-			self.readTypes()
+	def __init__(self, xmlFilePath = ""):
+		if xmlFilePath == "":
+			xmlFilePath = "OD_types.xml"
+		self.OD_types = etree.parse(xmlFilePath)
+		self.PASTypesDict = {}
+		self.readTypes()
 
 
 	def readTypes(self):

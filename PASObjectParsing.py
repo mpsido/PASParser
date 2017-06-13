@@ -84,21 +84,24 @@ class PASParsedObject:
 
 	def modifyData(self, data, fieldName, newValue, indexInArray=0):
 		"""modifies the field "fieldName" in "data" and gives it the value "newValue" """
-		if len(newValue) % 2 != 0:
-			newValue = "0" + newValue
 		formatedData = self.readData(data)
 		if fieldName not in formatedData:
 			raise KeyError("Cannot modify field {0} in object {1}: it does not exist".format(fieldName, self.objectName))
 		else:
+			if len(newValue) % 2 != 0:
+				newValue = "0" + newValue
+			
 			fieldValue = self.at(fieldName)
 			lengthOfField = fieldValue.size*2 #two characters for each byte
-			zPad = "{0:"+"<0{0}s".format(lengthOfField)+"}"
 			if len(newValue) > lengthOfField:
 				raise PASParsingException("Value {0} cannot fit in a data field of length {1}".format(newValue, lengthOfField))
+
+			zPad = "{0:"+"<0{0}s".format(lengthOfField)+"}"
+			newValue = zPad.format(newValue)
 			if fieldValue.arraySize == 1:
-				formatedData[fieldName] = zPad.format(newValue)
+				formatedData[fieldName] = newValue
 			else: #data field is an array
-				formatedData[fieldName][indexInArray] = zPad.format(newValue)
+				formatedData[fieldName][indexInArray] = newValue
 		return self.writeFormatedData(formatedData)
 
 	def readData(self, data):		

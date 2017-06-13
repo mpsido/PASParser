@@ -22,8 +22,10 @@ class PASObjReader:
 	"""This classes parses OD.xml file to prepare object parsing
 	Objects are parsed through function "parseObject"
 	"""
-	def __init__(self):
-		self.OD = etree.parse("OD.xml")
+	def __init__(self, xmlFilePath = ""):
+		if xmlFilePath == "":
+			xmlFilePath = "OD.xml"
+		self.OD = etree.parse(xmlFilePath)
 		self._PASObjDict = {}
 		self._PASObjXMLDict = {}
 		self.parsedObjects = {}

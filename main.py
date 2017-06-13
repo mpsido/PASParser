@@ -44,3 +44,9 @@ data_10000_modified = objReader.parsedObjects["10000"].modifyData(data_10000_mod
 
 print(data_10000)
 print(data_10000_modified)
+
+
+from PASINIParser import *
+reader_74000 = PASINIParser()
+reader_74000.parse("ECS-ELITE_1_C-1/", "74000")
+print(reader_74000.getData())

@@ -1,12 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import os, sys
+# lib_path = os.path.abspath(os.path.join('..', '..', '..', 'lib'))
+lib_path = os.path.abspath('..')
+sys.path.append(lib_path)
+lib_path = os.path.abspath('.')
+sys.path.append(lib_path)
 
-"""TODO faire un vrai système de tests automatiques
-
-"""
-
-import re 
 import unittest
 from PASType import *
 from PASObject import *
@@ -119,8 +120,6 @@ class Test_PASObjReader(unittest.TestCase):
 
 		data_10000_modified = self.objReader.parsedObjects["10000"].modifyData(data_10000_modified, "tSubSlotType", "BAC", 0)
 		self.assertEqual(data_10000_modified, "1B 01 02 0A 14 0D 09 00 12 00 00 00 00 00 00 00 00 00 00 15 03 000000 0B01010A 0BAC00 000000 000000 000000 000000 000000")
-
-
 
 
 
