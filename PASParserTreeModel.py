@@ -7,12 +7,13 @@ from PyQt4.QtCore import QT_TR_NOOP as tr
 
 
 class PASObjectNode(object):
-	def __init__(self, name, range_, size, nb_elements, parent=None):
+	def __init__(self, name, range_, size, nb_elements, value, parent=None):
 
 		self.name = name
 		self.range_ = range_
 		self.size = size
 		self.nb_elements = nb_elements
+		self.value = value
 
 		self.parent = parent
 		self.children = []
@@ -53,12 +54,12 @@ class PASParserTreeModel(QAbstractItemModel):
 		super(PASParserTreeModel, self).__init__(parent)
 
 		self.treeView = parent
-		self.headers = [tr('Name'),tr('Range'),tr('Size'), tr('Nb elements')]
+		self.headers = [tr('Name'),tr('Range'),tr('Size'), tr('Nb elements'), tr('Value')]
 
-		self.nbColumns = 4
+		self.nbColumns = 5
 
 		# Create root item
-		self.root = PASObjectNode('', '', '', '', None)
+		self.root = PASObjectNode('', '', '', '', '', None)
 
 
 	def flags(self, index):
@@ -118,6 +119,8 @@ class PASParserTreeModel(QAbstractItemModel):
 			return QVariant(node.size)
 		elif index.column() == 3:
 			return QVariant(node.nb_elements)
+		elif index.column() == 4:
+			return QVariant(node.value)
 		else:
 			return QVariant()
 

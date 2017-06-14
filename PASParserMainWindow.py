@@ -31,7 +31,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 		self.tabWidget.setTabText(0, re.split(r'[/\\]', my_dir)[-1] )
 		objects = filter(lambda x: re.match(r'^[0-9A-Fa-f]+$', x), os.listdir(my_dir))
 		for obj in objects:
-			PASObjectNode(obj, '', '', '', self.model.root)
+			PASObjectNode(obj.lower(), '', '', '', '', self.model.root)
 		self.model.insertRows(0, len(objects), QtCore.QModelIndex())
 
 
@@ -45,7 +45,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 		#find files whose name is a hexadecimal number
 		objects = filter(lambda x: re.match(r'^[0-9A-Fa-f]+$', x), os.listdir(my_dir))
 		for obj in objects:
-			PASObjectNode(obj, '', '', '', self.model.root)
+			PASObjectNode(obj.lower(), '', '', '', self.model.root)
 		self.model.insertRows(0, len(objects), QtCore.QModelIndex())
 
 	@QtCore.pyqtSlot(QtCore.QModelIndex) # signal with arguments
@@ -53,8 +53,16 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 		if self.model.rowCount(index) == 0 and self.model.isChildOfRoot(index):
 			node = self.model.nodeFromIndex(index)
 			self.objReader.parseObject(node.name, self.typeReader)
-			for field in self.objReader.parsedObjects[node.name].fields:
-				PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0], field.range_[1]), field.size, field.arraySize, node)
+			for j, field in enumerate(self.objReader.parsedObjects[node.name].fields):
+				if field.arraySize == 1:
+					PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0], field.range_[1]), field.size, field.arraySize, 0, node)
+				else: #in case of array append each field of the array
+					arrayNode = PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0][0], field.range_[-1][1]),
+						field.size, field.arraySize, 0, node)
+					for i in range(0, field.arraySize):
+						PASObjectNode(field.nameOfField + "[{}]".format(i), "byte {0} to {1}".format(field.range_[i][0], field.range_[i][1]),
+											field.size, field.arraySize, 0, arrayNode)
+					self.model.insertRows(0, field.arraySize, self.model.index(i, 0, self.model.index(j, 0, index) ))
 			self.model.insertRows(0, self.objReader.parsedObjects[node.name].nbFields(), index)
 
 

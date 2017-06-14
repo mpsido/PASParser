@@ -36,7 +36,7 @@ class PASObjReader:
 			elts = self.PASObjectsString
 		else:
 			for elt in self.OD.findall("group/object"):
-				elt_id = elt.get('start_index')
+				elt_id = elt.get('start_index').lower()
 				if re.match(r'0x[0-9A-Fa-f]+', elt_id) is not None:
 					elt_int_id = elt_id[2:]
 					self._PASObjDict[elt_int_id] = elt.get('name')
