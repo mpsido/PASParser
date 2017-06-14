@@ -19,6 +19,8 @@ class PASParsedTypeInObject:
 		self.typeName = ""
 		self.arraySize = 0
 		self.size = 0
+		self.value = ""
+		self.arrayValue = []
 
 	def __getitem__(self, index):
 		dataRange = (0,0)
@@ -37,8 +39,9 @@ class PASParsedTypeInObject:
 		self.typeName = typeName
 		self.arraySize = arraySize
 		self.size = size
+		self.arrayValue = [''] * arraySize
 		if arraySize == 1:
-			print_debug("adding index {0} {1}Â {2}".format(typeName, start_pos, start_pos + size), DEBUG_FLAG_RANGES)
+			print_debug("adding index {0} {1} {2}".format(typeName, start_pos, start_pos + size), DEBUG_FLAG_RANGES)
 			self.range_ = (start_pos, start_pos + size - 1)
 		else:
 			print_debug("adding array {0}".format(typeName), DEBUG_FLAG_RANGES)
@@ -56,36 +59,37 @@ class PASParsedObject:
 		self.fields = [] #list of PASParsedTypeInObject
 		self.spectrum = ""
 		self.objectName = objectName
+		self.dataString = ""
+		self.formatedData = {}
 
 	def writeFormatedData(self, formatedData):
 		"""transforms the formated data "formatedData" back into raw string """
-		dataString = ""
+		self.dataString = ""
 		cursor = 0
 		for field in self.fields:
 			if field.arraySize == 1:
 				padding = field.range_[0] - cursor
 				zeroPadding = "{0:"+"<0{0}s".format(padding*2)+"}"
 				if padding > 0:
-					dataString += zeroPadding.format("") + " "
-				dataString += formatedData[field.nameOfField] + " "
+					self.dataString += zeroPadding.format("") + " "
+				self.dataString += formatedData[field.nameOfField] + " "
 				cursor = field.range_[1] + 1
 			else:
 				padding = field.range_[0][0] - cursor
 				zeroPadding = "{0:"+"<0{0}s".format(padding*2)+"}"
 				if padding > 0:
-					dataString += zeroPadding.format("") + " "
+					self.dataString += zeroPadding.format("") + " "
 				for i in range(0, field.arraySize):
-					dataString += formatedData[field.nameOfField][i] + " "
+					self.dataString += formatedData[field.nameOfField][i] + " "
 				cursor = field.range_[field.arraySize - 1][1] + 1
 
-		if dataString.endswith(' '):
-			dataString = dataString[:-1]
-		return dataString
+		if self.dataString.endswith(' '):
+			self.dataString = self.dataString[:-1]
+		return self.dataString
 
-	def modifyData(self, data, fieldName, newValue, indexInArray=0):
+	def modifyData(self, fieldName, newValue, indexInArray=0):
 		"""modifies the field "fieldName" in "data" and gives it the value "newValue" """
-		formatedData = self.readData(data)
-		if fieldName not in formatedData:
+		if fieldName not in self.formatedData:
 			raise KeyError("Cannot modify field {0} in object {1}: it does not exist".format(fieldName, self.objectName))
 		else:
 			if len(newValue) % 2 != 0:
@@ -99,10 +103,13 @@ class PASParsedObject:
 			zPad = "{0:"+"<0{0}s".format(lengthOfField)+"}"
 			newValue = zPad.format(newValue)
 			if fieldValue.arraySize == 1:
-				formatedData[fieldName] = newValue
+				fieldValue.value = newValue
+				self.formatedData[fieldName] = fieldValue.value
 			else: #data field is an array
-				formatedData[fieldName][indexInArray] = newValue
-		return self.writeFormatedData(formatedData)
+				fieldValue.arrayValue[indexInArray] = newValue
+				self.formatedData[fieldName][indexInArray] = newValue
+			self.dataString = self.writeFormatedData(self.formatedData)
+		return self.dataString
 
 	def readData(self, data):		
 		"""
@@ -142,20 +149,22 @@ class PASParsedObject:
 		{'sub0' : 07,'u8IndexBoard' : 01, etc...}
 		"""
 		print_debug("Reading object {0} with data {1}".format(self.objectName, data), DEBUG_DATA_READING)
-		formatedData = {}
+		self.formatedData = {}
 		data = data.replace(' ','')
-		for index in self.fields:
-			if index.arraySize == 1:
-				print_debug("{0}\t\t = {1}".format(index.nameOfField, data[2*index.range_[0]:2*(index.range_[1]+1)]), DEBUG_DATA_READING)
-				formatedData[index.nameOfField] = data[2*index.range_[0]:2*(index.range_[1]+1)]
+		for field in self.fields:
+			if field.arraySize == 1:
+				print_debug("{0}\t\t = {1}".format(field.nameOfField, data[2*field.range_[0]:2*(field.range_[1]+1)]), DEBUG_DATA_READING)
+				field.value = data[2*field.range_[0]:2*(field.range_[1]+1)]
+				self.formatedData[field.nameOfField] = field.value
 				#we could convert into integer here, but we can leave it to the "display module"
 			else:
 				arrayContent = []
-				for i in range(0, index.arraySize):
-					arrayContent.append(data[2*index.range_[i][0]:2*(index.range_[i][1]+1)])
-					print_debug("{0}[{1}]\t\t = {2}".format(index.nameOfField, i, arrayContent[i]), DEBUG_DATA_READING)
-				formatedData[index.nameOfField] = arrayContent
-		return formatedData
+				for i in range(0, field.arraySize):
+					field.arrayValue[i] = data[2*field.range_[i][0]:2*(field.range_[i][1]+1)]
+					arrayContent.append(field.arrayValue[i])
+					print_debug("{0}[{1}]\t\t = {2}".format(field.nameOfField, i, arrayContent[i]), DEBUG_DATA_READING)
+				self.formatedData[field.nameOfField] = arrayContent
+		return self.formatedData
 
 	def __repr__(self):
 		"""
