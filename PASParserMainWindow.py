@@ -59,18 +59,18 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 			node = self.model.nodeFromIndex(index)
 			self.iniParser.parse(self.pasDir[self.tabWidget.currentIndex()], node.name)
 			data = self.iniParser.getData()
-			parsedData = self.objReader[node.name].readData(data)
+			self.objReader[node.name].readData(data)
 
 			for j, field in enumerate(self.objReader[node.name].fields):
 				if field.arraySize == 1:
 					PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0], field.range_[1]),
-						field.size, field.arraySize, parsedData[field.nameOfField], node)
+						field.size, field.arraySize, self.objReader[node.name].at(field.nameOfField), node)
 				else: #in case of array append each field of the array
 					arrayNode = PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0][0], field.range_[-1][1]),
-						field.size, field.arraySize, '', node)
+						field.size, field.arraySize, self.objReader[node.name].at(field.nameOfField), node)
 					for i in range(0, field.arraySize):
 						PASObjectNode(field.nameOfField + "[{}]".format(i), "byte {0} to {1}".format(field.range_[i][0], field.range_[i][1]),
-											field.size, field.arraySize, parsedData[field.nameOfField][i], arrayNode)
+											field.size, field.arraySize, self.objReader[node.name].at(field.nameOfField), arrayNode)
 					self.model.insertRows(0, field.arraySize, self.model.index(i, 0, self.model.index(j, 0, index) ))
 			self.model.insertRows(0, self.objReader[node.name].nbFields(), index)
 

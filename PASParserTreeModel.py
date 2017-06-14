@@ -5,15 +5,27 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtCore import QT_TR_NOOP as tr
 
+from PASObjectParsing import *
+
+
+ENUM_TYPE_NODE_ROOT = 0
+ENUM_TYPE_NODE_OBJECT = 1
+ENUM_TYPE_NODE_TYPE_IN_OBJECT = 2
+ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT = 3
 
 class PASObjectNode(object):
-	def __init__(self, name, range_, size, nb_elements, value, parent=None):
+	def __init__(self, name, range_, size, nb_elements, pasTypeOrObject, parent=None):
 
 		self.name = name
 		self.range_ = range_
 		self.size = size
 		self.nb_elements = nb_elements
-		self.value = value
+		self.pasTypeOrObject = pasTypeOrObject
+
+		if parent == None:
+			self.typeOfNode = ENUM_TYPE_NODE_ROOT
+		else:
+			self.typeOfNode = parent.typeOfNode + 1
 
 		self.parent = parent
 		self.children = []
@@ -64,7 +76,7 @@ class PASParserTreeModel(QAbstractItemModel):
 
 	def flags(self, index):
 		flags = QAbstractItemModel.flags(self, index)
-		if index.column() == 4 and self.nodeFromIndex(index).value != '':
+		if index.column() == 4 and self.nodeFromIndex(index).typeOfNode >= ENUM_TYPE_NODE_TYPE_IN_OBJECT:
 			flags |= Qt.ItemIsEditable
 		return flags
 
@@ -129,7 +141,12 @@ class PASParserTreeModel(QAbstractItemModel):
 		elif index.column() == 3:
 			return QVariant(node.nb_elements)
 		elif index.column() == 4:
-			return QVariant(node.value)
+			if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
+				return QVariant(node.pasTypeOrObject.value)
+			elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:
+				return QVariant(node.pasTypeOrObject.arrayValue[node.parent.rowOfChild(node)])
+			else:
+				return QVariant()
 		else:
 			return QVariant()
 
