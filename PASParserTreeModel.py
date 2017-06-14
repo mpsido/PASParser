@@ -100,6 +100,13 @@ class PASParserTreeModel(QAbstractItemModel):
 		node = self.nodeFromIndex(parent)
 		return self.createIndex(row, column, node.childAtRow(row))
 
+	def setData(self, index, value, role = Qt.EditRole):
+		if role == Qt.EditRole:
+			node = self.nodeFromIndex(index)
+			node.value = value
+			self.dataChanged.emit(index, index)
+			return True
+		return False
 
 	def data(self, index, role):
 		if role == Qt.DecorationRole:
