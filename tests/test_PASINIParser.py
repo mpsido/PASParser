@@ -18,7 +18,6 @@ from PASObject import *
 class Test_PASINIParser(unittest.TestCase):
 	def setUp(self):
 		self.iniParser = PASINIParser() 
-		self.typeReader = PASTypeReader() 
 		self.objReader = PASObjReader()
 
 
@@ -28,8 +27,7 @@ class Test_PASINIParser(unittest.TestCase):
 		self.assertEqual(data_74000, 
 			'02 00 606D0C006054D052584D50463863580260096400D00764006400F40101010104 00A41011301068ABE000')
 
-		self.objReader.parseObject("74000", self.typeReader)
-		data_74000_modified = self.objReader.parsedObjects["74000"].modifyData(data_74000, "sub0", "04")
+		data_74000_modified = self.objReader["74000"].modifyData(data_74000, "sub0", "04")
 
 		self.iniParser.setData(data_74000_modified)
 

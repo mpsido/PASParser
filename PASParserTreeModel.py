@@ -63,8 +63,10 @@ class PASParserTreeModel(QAbstractItemModel):
 
 
 	def flags(self, index):
-		defaultFlags = QAbstractItemModel.flags(self, index)
-		return defaultFlags
+		flags = QAbstractItemModel.flags(self, index)
+		if index.column() == 4 and self.nodeFromIndex(index).value != '':
+			flags |= Qt.ItemIsEditable
+		return flags
 
 	def headerData(self, section, orientation, role):
 		if orientation == Qt.Horizontal and role == Qt.DisplayRole:

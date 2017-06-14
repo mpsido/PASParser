@@ -28,7 +28,8 @@ class PASObjReader:
 		self.OD = etree.parse(xmlFilePath)
 		self._PASObjDict = {}
 		self._PASObjXMLDict = {}
-		self.parsedObjects = {}
+		self._parsedObjects = {}
+		self.typeReader = PASTypeReader()
 		self.readObjects()
 	def readObjects(self):
 		elts = ""
@@ -58,11 +59,18 @@ class PASObjReader:
 
 	calculatePadding = staticmethod(calculatePadding)
 
-	def parseObject(self, objectId, TypeReader):
+
+	def __getitem__(self, objectId):
+		objectId = objectId.lower()
+		self.parseObject(objectId)
+		return self._parsedObjects[objectId]
+
+
+	def parseObject(self, objectId):
 		""" 
 		Parse the object whose "start_index" is objectId
 		constructs an arborescence of the types contained in this object
-		Uses the data in TypeReader to calculate the position of each typed field in the final DATA representing this object
+		Uses the data in self.self.typeReader to calculate the position of each typed field in the final DATA representing this object
 
 		Also constructs the spectrum of this object
 		The "spectrum" is presentation of the way data of this type are presented in the file inside .dds export 
@@ -72,7 +80,8 @@ class PASObjReader:
 		[a-z] = data (two successive data are named with a different letter)
 		"""
 		spectrum="Empty Spectrum"
-		if objectId not in self.parsedObjects:
+		objectId = objectId.lower()
+		if objectId not in self._parsedObjects:
 			if objectId in self._PASObjXMLDict:
 				letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 				spectrum = ""
@@ -83,7 +92,7 @@ class PASObjReader:
 					nameOfField = typeNode.get('name')
 					typeName = typeNode.get('type')
 					count = int(typeNode.get('count')) #longueur du tableau
-					pasType = TypeReader.PASTypesDict[typeName]
+					pasType = self.typeReader.PASTypesDict[typeName]
 					print_debug("DATA {4}:Type {0} size {1} count {2} padding {3}"
 						.format(typeName, pasType.size, count, pasType.padding, letters[l]), DEBUG_FLAG_PADDING)
 					padding = PASObjReader.calculatePadding(byteNumber, pasType.padding)
@@ -109,9 +118,9 @@ class PASObjReader:
 				if spectrum.endswith(' '):
 					spectrum = spectrum[:-1]
 				parsedObject.spectrum = spectrum
-				self.parsedObjects[objectId] = parsedObject
+				self._parsedObjects[objectId] = parsedObject
 			else:
 				spectrum = "Non existing object"
 		else:
-			spectrum = self.parsedObjects[objectId].spectrum
+			spectrum = self._parsedObjects[objectId].spectrum
 		return spectrum
