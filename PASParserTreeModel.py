@@ -76,7 +76,9 @@ class PASParserTreeModel(QAbstractItemModel):
 
 	def flags(self, index):
 		flags = QAbstractItemModel.flags(self, index)
-		if index.column() == 4 and self.nodeFromIndex(index).typeOfNode >= ENUM_TYPE_NODE_TYPE_IN_OBJECT:
+		node = self.nodeFromIndex(index)
+		if index.column() == 4 and (node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT or
+			(node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT and len(node) == 0)):
 			flags |= Qt.ItemIsEditable
 		return flags
 
@@ -113,12 +115,18 @@ class PASParserTreeModel(QAbstractItemModel):
 		return self.createIndex(row, column, node.childAtRow(row))
 
 	def setData(self, index, value, role = Qt.EditRole):
+		success = False
 		if role == Qt.EditRole:
 			node = self.nodeFromIndex(index)
-			node.value = value
+			if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
+				node.pasTypeOrObject.value = value.toString()
+				sucess = True
+			elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:
+				node.pasTypeOrObject[node.parent.rowOfChild(node)] = value.toString()
+				sucess = True
+		if (success):
 			self.dataChanged.emit(index, index)
-			return True
-		return False
+		return success
 
 	def data(self, index, role):
 		if role == Qt.DecorationRole:
@@ -144,7 +152,7 @@ class PASParserTreeModel(QAbstractItemModel):
 			if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
 				return QVariant(node.pasTypeOrObject.value)
 			elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:
-				return QVariant(node.pasTypeOrObject.arrayValue[node.parent.rowOfChild(node)])
+				return QVariant( node.pasTypeOrObject[node.parent.rowOfChild(node)] )
 			else:
 				return QVariant()
 		else:

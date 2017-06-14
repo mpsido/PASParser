@@ -3,6 +3,7 @@
 
 from print_debug import *
 from PASParsingException import *
+import re
 
 DEBUG_FLAG_PADDING = 1
 DEBUG_FLAG_RANGES = 2 
@@ -10,7 +11,7 @@ DEBUG_DATA_READING = 4
 
 set_debug_flags(0)
 
-class PASParsedTypeInObject:
+class PASParsedTypeInObject(object):
 	"""Class that represents a type stored inside an object: 
 	it keeps the indexes where the data is stored inside the object and provides tools the read and write the data"""
 	def __init__(self):
@@ -19,27 +20,39 @@ class PASParsedTypeInObject:
 		self.typeName = ""
 		self.arraySize = 0
 		self.size = 0
-		self.value = ""
-		self.arrayValue = []
+
+
+	def _get_value(self):
+		return self._motherObject.formatedData[self.nameOfField]
+
+	def _set_value(self, value):
+		self._motherObject.modifyData(self.nameOfField, value)
+
+	value = property(fget=_get_value, fset=_set_value)
+
+	def __setitem__(self, index, newValue):
+		if self.arraySize > 1:
+			self._motherObject.modifyData(self.nameOfField, newValue, index)
+		else:
+			raise IndexError("Trying to set data {0} of type {1} but {4} is not an array in object {3}"
+				.format(index, self.typeName, self.objectName, self.nameOfField))
 
 	def __getitem__(self, index):
-		dataRange = (0,0)
+		dataValue = ""
 		if self.arraySize > 1:
-			dataRange = self.range_[index]
-		elif index > 0:
-			raise IndexError("Trying to read data {0}Â of type {1} but this is not an array in object {3} name of field {4}"
-				.format(index, self.typeName, self.objectName, self.nameOfField))
+			dataValue = self._motherObject.formatedData[self.nameOfField][index]
 		else:
-			dataRange = self.range_
-		return dataRange
+			raise IndexError("Trying to read data {0} of type {1} but {4} is not an array in object {3}"
+				.format(index, self.typeName, self.objectName, self.nameOfField))
+		return dataValue
 
-	def setInfos(self, objectName, nameOfField, typeName, start_pos, size, arraySize):
+	def setInfos(self, objectName, nameOfField, typeName, start_pos, size, arraySize, motherObject):
 		self.objectName = objectName
 		self.nameOfField = nameOfField
 		self.typeName = typeName
 		self.arraySize = arraySize
 		self.size = size
-		self.arrayValue = [''] * arraySize
+		self._motherObject = motherObject
 		if arraySize == 1:
 			print_debug("adding index {0} {1} {2}".format(typeName, start_pos, start_pos + size), DEBUG_FLAG_RANGES)
 			self.range_ = (start_pos, start_pos + size - 1)
@@ -92,10 +105,12 @@ class PASParsedObject:
 		if fieldName not in self.formatedData:
 			raise KeyError("Cannot modify field {0} in object {1}: it does not exist".format(fieldName, self.objectName))
 		else:
+			if re.match(r'^([0-9]|[a-fA-F])+$', newValue, flags=re.I) is None:
+				raise PASParsingException("Value {0} is invalid, it must be an hexadecimal number".format(newValue))
 			if len(newValue) % 2 != 0:
 				newValue = "0" + newValue
 			
-			fieldValue = self.at(fieldName)
+			fieldValue = self.__getitem__(fieldName)
 			lengthOfField = fieldValue.size*2 #two characters for each byte
 			if len(newValue) > lengthOfField:
 				raise PASParsingException("Value {0} cannot fit in a data field of length {1}".format(newValue, lengthOfField))
@@ -103,10 +118,8 @@ class PASParsedObject:
 			zPad = "{0:"+"<0{0}s".format(lengthOfField)+"}"
 			newValue = zPad.format(newValue)
 			if fieldValue.arraySize == 1:
-				fieldValue.value = newValue
-				self.formatedData[fieldName] = fieldValue.value
+				self.formatedData[fieldName] = newValue
 			else: #data field is an array
-				fieldValue.arrayValue[indexInArray] = newValue
 				self.formatedData[fieldName][indexInArray] = newValue
 			self.dataString = self.writeFormatedData(self.formatedData)
 		return self.dataString
@@ -154,14 +167,12 @@ class PASParsedObject:
 		for field in self.fields:
 			if field.arraySize == 1:
 				print_debug("{0}\t\t = {1}".format(field.nameOfField, data[2*field.range_[0]:2*(field.range_[1]+1)]), DEBUG_DATA_READING)
-				field.value = data[2*field.range_[0]:2*(field.range_[1]+1)]
-				self.formatedData[field.nameOfField] = field.value
+				self.formatedData[field.nameOfField] = data[2*field.range_[0]:2*(field.range_[1]+1)]
 				#we could convert into integer here, but we can leave it to the "display module"
 			else:
 				arrayContent = []
 				for i in range(0, field.arraySize):
-					field.arrayValue[i] = data[2*field.range_[i][0]:2*(field.range_[i][1]+1)]
-					arrayContent.append(field.arrayValue[i])
+					arrayContent.append(data[2*field.range_[i][0]:2*(field.range_[i][1]+1)])
 					print_debug("{0}[{1}]\t\t = {2}".format(field.nameOfField, i, arrayContent[i]), DEBUG_DATA_READING)
 				self.formatedData[field.nameOfField] = arrayContent
 		return self.formatedData
@@ -193,22 +204,20 @@ class PASParsedObject:
 					index.size)
 		return description
 
+	def __setitem__(self, fieldId, newValue):
+		return self.modifyData(fieldId, newValue)
 
-	def at(self, nameOfField):
-		dataField = PASParsedTypeInObject()
-		for index in self.fields:
-			if index.nameOfField == nameOfField:
-				dataField = index
-				break
+	def __getitem__(self, fieldId):
+		if type(fieldId) is int:
+			dataField = self.fields[fieldId]
+		else:
+			dataField = [field for field in self.fields if field.nameOfField == fieldId][0]
 		return dataField
-
-	def __getitem__(self, index):
-		return self.fields[index]
 
 	def addField(self, nameOfField, typeName, start_pos, size, arraySize):
 		""" adds a field in this parsed object """
 		parsedType = PASParsedTypeInObject()
-		parsedType.setInfos(self.objectName, nameOfField, typeName, start_pos, size, arraySize)
+		parsedType.setInfos(self.objectName, nameOfField, typeName, start_pos, size, arraySize, self)
 		self.fields.append(parsedType)
 
 	def nbFields(self):
