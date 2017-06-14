@@ -23,37 +23,37 @@ class PASParsedTypeInObject:
 	def __getitem__(self, index):
 		dataRange = (0,0)
 		if self.arraySize > 1:
-			dataRange = self.range[index]
+			dataRange = self.range_[index]
 		elif index > 0:
-			raise IndexError("Trying to read data {0}Â of type {1} but this is not an array in object {3} name of field {4}"
+			raise IndexError("Trying to read data {0}Â of type {1} but this is not an array in object {3} name of field {4}"
 				.format(index, self.typeName, self.objectName, self.nameOfField))
 		else:
-			dataRange = self.range
+			dataRange = self.range_
 		return dataRange
 
-	def setIndex(self, objectName, nameOfField, typeName, start_pos, size, arraySize):
+	def setInfos(self, objectName, nameOfField, typeName, start_pos, size, arraySize):
 		self.objectName = objectName
 		self.nameOfField = nameOfField
 		self.typeName = typeName
 		self.arraySize = arraySize
 		self.size = size
 		if arraySize == 1:
-			print_debug("adding index {0} {1}Â {2}".format(typeName, start_pos, start_pos + size), DEBUG_FLAG_RANGES)
-			self.range = (start_pos, start_pos + size - 1)
+			print_debug("adding index {0} {1}Â {2}".format(typeName, start_pos, start_pos + size), DEBUG_FLAG_RANGES)
+			self.range_ = (start_pos, start_pos + size - 1)
 		else:
 			print_debug("adding array {0}".format(typeName), DEBUG_FLAG_RANGES)
 			indexes = []
 			for i in range(0, arraySize):
 				indexes.append( (start_pos, start_pos + size - 1) )
 				start_pos += size
-			self.range = indexes
+			self.range_ = indexes
 
 
 class PASParsedObject:
 	"""This class is a container for PASParsedTypeInObject objects, it constructs them and store them"""
 
 	def __init__(self, objectName):
-		self.indexes = [] #list of PASParsedTypeInObject
+		self.fields = [] #list of PASParsedTypeInObject
 		self.spectrum = ""
 		self.objectName = objectName
 
@@ -61,22 +61,22 @@ class PASParsedObject:
 		"""transforms the formated data "formatedData" back into raw string """
 		dataString = ""
 		cursor = 0
-		for index in self.indexes:
-			if index.arraySize == 1:
-				padding = index.range[0] - cursor
+		for field in self.fields:
+			if field.arraySize == 1:
+				padding = field.range_[0] - cursor
 				zeroPadding = "{0:"+"<0{0}s".format(padding*2)+"}"
 				if padding > 0:
 					dataString += zeroPadding.format("") + " "
-				dataString += formatedData[index.nameOfField] + " "
-				cursor = index.range[1] + 1
+				dataString += formatedData[field.nameOfField] + " "
+				cursor = field.range_[1] + 1
 			else:
-				padding = index.range[0][0] - cursor
+				padding = field.range_[0][0] - cursor
 				zeroPadding = "{0:"+"<0{0}s".format(padding*2)+"}"
 				if padding > 0:
 					dataString += zeroPadding.format("") + " "
-				for i in range(0, index.arraySize):
-					dataString += formatedData[index.nameOfField][i] + " "
-				cursor = index.range[index.arraySize - 1][1] + 1
+				for i in range(0, field.arraySize):
+					dataString += formatedData[field.nameOfField][i] + " "
+				cursor = field.range_[field.arraySize - 1][1] + 1
 
 		if dataString.endswith(' '):
 			dataString = dataString[:-1]
@@ -126,15 +126,15 @@ class PASParsedObject:
 		print_debug("Reading object {0} with data {1}".format(self.objectName, data), DEBUG_DATA_READING)
 		formatedData = {}
 		data = data.replace(' ','')
-		for index in self.indexes:
+		for index in self.fields:
 			if index.arraySize == 1:
-				print_debug("{0}\t\t = {1}".format(index.nameOfField, data[2*index.range[0]:2*(index.range[1]+1)]), DEBUG_DATA_READING)
-				formatedData[index.nameOfField] = data[2*index.range[0]:2*(index.range[1]+1)]
+				print_debug("{0}\t\t = {1}".format(index.nameOfField, data[2*index.range_[0]:2*(index.range_[1]+1)]), DEBUG_DATA_READING)
+				formatedData[index.nameOfField] = data[2*index.range_[0]:2*(index.range_[1]+1)]
 				#we could convert into integer here, but we can leave it to the "display module"
 			else:
 				arrayContent = []
 				for i in range(0, index.arraySize):
-					arrayContent.append(data[2*index.range[i][0]:2*(index.range[i][1]+1)])
+					arrayContent.append(data[2*index.range_[i][0]:2*(index.range_[i][1]+1)])
 					print_debug("{0}[{1}]\t\t = {2}".format(index.nameOfField, i, arrayContent[i]), DEBUG_DATA_READING)
 				formatedData[index.nameOfField] = arrayContent
 		return formatedData
@@ -156,31 +156,34 @@ class PASParsedObject:
 		data 	 :	07 01 5B6C 0000 0000 00 00 00000000000000000001 0000
 		"""
 		description = "Object: {0}\n".format(self.objectName)
-		for index in self.indexes:
+		for index in self.fields:
 			if index.arraySize == 1:
 				description += "{0}\t\t: Type: {1} at position {2} to {3} size {4}\n"\
-				.format(index.nameOfField, index.typeName, index.range[0], index.range[1], index.size)
+				.format(index.nameOfField, index.typeName, index.range_[0], index.range_[1], index.size)
 			else:
 				description += "{0}\t\t: Array {1} elements of type {2} from {3} to {4} each element has a size: {5}\n"\
-				.format(index.nameOfField, index.arraySize, index.typeName, index.range[0][0], index.range[index.arraySize - 1][1], 
+				.format(index.nameOfField, index.arraySize, index.typeName, index.range_[0][0], index.range_[index.arraySize - 1][1],
 					index.size)
 		return description
 
 
 	def at(self, nameOfField):
 		dataField = PASParsedTypeInObject()
-		for index in self.indexes:
+		for index in self.fields:
 			if index.nameOfField == nameOfField:
 				dataField = index
 				break
 		return dataField
 
 	def __getitem__(self, index):
-		return self.indexes[index]
+		return self.fields[index]
 
-	def addIndex(self, nameOfField, typeName, start_pos, size, arraySize):
+	def addField(self, nameOfField, typeName, start_pos, size, arraySize):
 		""" adds a field in this parsed object """
 		parsedType = PASParsedTypeInObject()
-		parsedType.setIndex(self.objectName, nameOfField, typeName, start_pos, size, arraySize)
-		self.indexes.append(parsedType)
+		parsedType.setInfos(self.objectName, nameOfField, typeName, start_pos, size, arraySize)
+		self.fields.append(parsedType)
+
+	def nbFields(self):
+		return len(self.fields)
     

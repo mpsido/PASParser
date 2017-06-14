@@ -25,10 +25,10 @@ class Test_PASObjReader(unittest.TestCase):
 		self.assertEqual( self.objReader.parseObject("10000", self.typeReader)
 		, "AA BB CC DD EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE FF GG 000000 HHHHHHHH IIIIII IIIIII IIIIII IIIIII IIIIII IIIIII")
 
-		self.assertEqual(self.objReader.parsedObjects["10000"][0].range, (0,0))
+		self.assertEqual(self.objReader.parsedObjects["10000"][0].range_, (0,0))
 		self.assertEqual(self.objReader.parsedObjects["10000"][1][0], (1,1))
-		self.assertEqual(self.objReader.parsedObjects["10000"][2].range, (2,2))
-		self.assertEqual(self.objReader.parsedObjects["10000"][3].range, (3,3))
+		self.assertEqual(self.objReader.parsedObjects["10000"][2].range_, (2,2))
+		self.assertEqual(self.objReader.parsedObjects["10000"][3].range_, (3,3))
 
 		self.assertEqual(self.objReader.parsedObjects["10000"][4].arraySize, 15)
 		index = 4
@@ -37,15 +37,15 @@ class Test_PASObjReader(unittest.TestCase):
 			index += 1
 
 
-		self.assertEqual(self.objReader.parsedObjects["10000"][5].range, (19,19))
-		self.assertEqual(self.objReader.parsedObjects["10000"][6].range, (20,20))
-		self.assertEqual(self.objReader.parsedObjects["10000"][7].range, (24,27))
+		self.assertEqual(self.objReader.parsedObjects["10000"][5].range_, (19,19))
+		self.assertEqual(self.objReader.parsedObjects["10000"][6].range_, (20,20))
+		self.assertEqual(self.objReader.parsedObjects["10000"][7].range_, (24,27))
 
 
 		self.assertEqual(self.objReader.parsedObjects["10000"][8].arraySize, 6)
 		index = 28
 		for i in range (0, 6):
-			self.assertEqual(self.objReader.parsedObjects["10000"][8].range[i], (index,index+2))
+			self.assertEqual(self.objReader.parsedObjects["10000"][8].range_[i], (index,index+2))
 			index += 3
 
 		#Data reading
@@ -69,9 +69,9 @@ class Test_PASObjReader(unittest.TestCase):
 		, "AA 00 BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB CCCCCCCCCCCCCCCCCCCC")
 
 
-		self.assertEqual(self.objReader.parsedObjects["74000"][0].range, (0,0))
-		self.assertEqual(self.objReader.parsedObjects["74000"][1].range, (2,33))
-		self.assertEqual(self.objReader.parsedObjects["74000"][2].range, (34,43))
+		self.assertEqual(self.objReader.parsedObjects["74000"][0].range_, (0,0))
+		self.assertEqual(self.objReader.parsedObjects["74000"][1].range_, (2,33))
+		self.assertEqual(self.objReader.parsedObjects["74000"][2].range_, (34,43))
 
 		self.assertEqual(self.objReader.parsedObjects["74000"].readData("02 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"),
 		{'sub0':'02',
@@ -82,7 +82,7 @@ class Test_PASObjReader(unittest.TestCase):
 		self.assertEqual( self.objReader.parseObject("71B00", self.typeReader)
 			, "AA BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB")
 
-		self.assertEqual(self.objReader.parsedObjects["71B00"][0].range, (0,0))
+		self.assertEqual(self.objReader.parsedObjects["71B00"][0].range_, (0,0))
 
 		self.assertEqual(self.objReader.parsedObjects["71B00"][1].arraySize, 255)
 		index = 1
@@ -94,14 +94,14 @@ class Test_PASObjReader(unittest.TestCase):
 		self.assertEqual( self.objReader.parseObject("30092", self.typeReader)
 			, "AA BB CCCC DDDD EEEE FF 00 GGGGGGGGGGGGGGGGGGGG HHHH")
 
-		self.assertEqual(self.objReader.parsedObjects["30092"][0].range, (0,0))
+		self.assertEqual(self.objReader.parsedObjects["30092"][0].range_, (0,0))
 		self.assertEqual(self.objReader.parsedObjects["30092"][1][0], (1,1))
-		self.assertEqual(self.objReader.parsedObjects["30092"][2].range, (2,3))
-		self.assertEqual(self.objReader.parsedObjects["30092"][3].range, (4,5))
-		self.assertEqual(self.objReader.parsedObjects["30092"][4].range, (6,7))
-		self.assertEqual(self.objReader.parsedObjects["30092"][5].range, (8,8))
-		self.assertEqual(self.objReader.parsedObjects["30092"][6].range, (10,19))
-		self.assertEqual(self.objReader.parsedObjects["30092"][7].range, (20,21))
+		self.assertEqual(self.objReader.parsedObjects["30092"][2].range_, (2,3))
+		self.assertEqual(self.objReader.parsedObjects["30092"][3].range_, (4,5))
+		self.assertEqual(self.objReader.parsedObjects["30092"][4].range_, (6,7))
+		self.assertEqual(self.objReader.parsedObjects["30092"][5].range_, (8,8))
+		self.assertEqual(self.objReader.parsedObjects["30092"][6].range_, (10,19))
+		self.assertEqual(self.objReader.parsedObjects["30092"][7].range_, (20,21))
 
 
 	def test_modify_1000(self):

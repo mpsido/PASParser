@@ -96,7 +96,7 @@ class PASObjReader:
 						spectrum += " "
 
 					#fill in parsed object with the type we are currently parsing
-					parsedObject.addIndex(nameOfField, typeName, byteNumber, pasType.size, count)
+					parsedObject.addField(nameOfField, typeName, byteNumber, pasType.size, count)
 
 					while count > 0:
 						spectrum += pasType.spectrum.replace('X', letters[l])

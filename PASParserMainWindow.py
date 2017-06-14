@@ -20,10 +20,20 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 		self.pasDir = []
 		self.model = PASParserTreeModel(self)
 		self.treeView.setModel(self.model)
-		self.treeView.activated.connect(self.on_itemActivated)
+		self.treeView.clicked.connect(self.on_itemActivated)
 
 		self.typeReader = PASTypeReader()
 		self.objReader = PASObjReader()
+
+
+		#temporary code for tests:
+		my_dir = 'D:\Projects\PAS_parser\ECS-ELITE_1_C-1'
+		self.tabWidget.setTabText(0, re.split(r'[/\\]', my_dir)[-1] )
+		objects = filter(lambda x: re.match(r'^[0-9A-Fa-f]+$', x), os.listdir(my_dir))
+		for obj in objects:
+			PASObjectNode(obj, '', '', '', self.model.root)
+		self.model.insertRows(0, len(objects), QtCore.QModelIndex())
+
 
 	@QtCore.pyqtSlot() # signal with no arguments
 	def on_action_Import_triggered(self):
@@ -34,17 +44,19 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
 		#find files whose name is a hexadecimal number
 		objects = filter(lambda x: re.match(r'^[0-9A-Fa-f]+$', x), os.listdir(my_dir))
-		print (objects)
 		for obj in objects:
 			PASObjectNode(obj, '', '', '', self.model.root)
 		self.model.insertRows(0, len(objects), QtCore.QModelIndex())
 
 	@QtCore.pyqtSlot(QtCore.QModelIndex) # signal with arguments
 	def on_itemActivated(self, index):
-		node = self.model.nodeFromIndex(index)
-		spectrum = self.objReader.parseObject(node.name, self.typeReader)
-		node.name = spectrum
-		self.model.changeData(index)
+		if self.model.rowCount(index) == 0 and self.model.isChildOfRoot(index):
+			node = self.model.nodeFromIndex(index)
+			self.objReader.parseObject(node.name, self.typeReader)
+			for field in self.objReader.parsedObjects[node.name].fields:
+				PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0], field.range_[1]), field.size, field.arraySize, node)
+			self.model.insertRows(0, self.objReader.parsedObjects[node.name].nbFields(), index)
+
 
 
 

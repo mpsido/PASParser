@@ -10,9 +10,9 @@ class PASObjectNode(object):
 	def __init__(self, name, range_, size, nb_elements, parent=None):
 
 		self.name = name
-		self.range_ = QString(range_)
-		self.size = QString(size)
-		self.nb_elements = QString(nb_elements)
+		self.range_ = range_
+		self.size = size
+		self.nb_elements = nb_elements
 
 		self.parent = parent
 		self.children = []
@@ -155,6 +155,8 @@ class PASParserTreeModel(QAbstractItemModel):
 		assert row != - 1
 		return self.createIndex(row, 0, parent)
 
+	def isChildOfRoot(self, index):
+		return self.parent(index) == QModelIndex()
 
 	def nodeFromIndex(self, index):
 		return index.internalPointer() if index.isValid() else self.root
