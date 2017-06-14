@@ -38,10 +38,10 @@ class PASObjReader:
 			for elt in self.OD.findall("group/object"):
 				elt_id = elt.get('start_index')
 				if re.match(r'0x[0-9A-Fa-f]+', elt_id) is not None:
-				    elt_int_id = elt_id[2:]
-				    self._PASObjDict[elt_int_id] = elt.get('name')
-				    self._PASObjXMLDict[elt_int_id] = elt
-				    elts += self._PASObjDict[elt_int_id] + " " + str(elt_id) + "\n"
+					elt_int_id = elt_id[2:]
+					self._PASObjDict[elt_int_id] = elt.get('name')
+					self._PASObjXMLDict[elt_int_id] = elt
+					elts += self._PASObjDict[elt_int_id] + " " + str(elt_id) + "\n"
 				else:
 					print ("start_index id={0} is not in format 0x[0-9A-Fa-f]+".format(elt_id+ " "))
 			if elts.endswith('\n'):
@@ -106,10 +106,12 @@ class PASObjReader:
 						spectrum += " "
 						byteNumber += pasType.size
 					l += 1
-			if spectrum.endswith(' '):
-			    spectrum = spectrum[:-1]
-			parsedObject.spectrum = spectrum
-			self.parsedObjects[objectId] = parsedObject
+				if spectrum.endswith(' '):
+					spectrum = spectrum[:-1]
+				parsedObject.spectrum = spectrum
+				self.parsedObjects[objectId] = parsedObject
+			else:
+				spectrum = "Non existing object"
 		else:
 			spectrum = self.parsedObjects[objectId].spectrum
 		return spectrum
