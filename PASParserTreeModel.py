@@ -119,10 +119,10 @@ class PASParserTreeModel(QAbstractItemModel):
         if role == Qt.EditRole:
             node = self.nodeFromIndex(index)
             if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
-                node.pasTypeOrObject.value = value.toString()
+                node.pasTypeOrObject.value = str(value.toString())
                 sucess = True
             elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:
-                node.pasTypeOrObject[node.parent.rowOfChild(node)] = value.toString()
+                node.pasTypeOrObject[node.parent.rowOfChild(node)] = str(value.toString())
                 sucess = True
         if (success):
             self.dataChanged.emit(index, index)

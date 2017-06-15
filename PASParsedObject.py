@@ -10,8 +10,9 @@ from PASParsedTypeInObject import *
 DEBUG_FLAG_PADDING = 1
 DEBUG_FLAG_RANGES = 2 
 DEBUG_DATA_READING = 4
+DEBUG_DATA_CHECK = 8
 
-set_debug_flags(0)
+set_debug_flags(8)
 
 
 class PASParsedObject:
@@ -24,26 +25,64 @@ class PASParsedObject:
         self.dataString = ""
         self.formatedData = {}
 
+    def isDataValid(self, data):
+        if self.spectrum == "" or self.spectrum == "Empty Spectrum":
+            print("This Object was not correctly parsed")
+            return False
+        while data.endswith(' '):
+           data = data[:-1]
+
+        if len(data) != len(self.spectrum):
+            print_debug("len(data) != len(spectrum)", DEBUG_DATA_CHECK)
+            return False
+
+        #Construct a regex to check data
+        regexBase = "(([0-9]|[a-fA-F]){2})"
+        regexString = ""
+        cursor = 0
+        for field in self.fields:
+            if field.arraySize == 1:
+                regexString += PASParsedObject.paddingString(field.range_[0], cursor)
+                regexString += regexBase + "{" + "{0}".format(field.size) + "} "
+                cursor = field.range_[1] + 1
+            else:
+                regexString += PASParsedObject.paddingString(field.range_[0][0], cursor)
+                for arrayField in field.range_:
+                    regexString += regexBase + "{" + "{0}".format(field.size) + "} "
+                cursor = field.range_[-1][1] + 1
+
+        while regexString.endswith(' '):
+           regexString = regexString[:-1]
+
+#        print(regexString)
+        regMatch = re.compile(regexString)
+
+        return regMatch.match(data) is not None
+
+    def paddingString(nextbyteCursor, currentCursor):
+        strPadding = ""
+        padding = nextbyteCursor - currentCursor
+        if padding > 0:
+            zeroPadding = "{0:"+"<0{0}s".format(padding*2)+"}"
+            strPadding = zeroPadding.format("") + " "
+        return strPadding
+
+    paddingString = staticmethod(paddingString)
+
     def writeFormatedData(self, formatedData):
         """transforms the formated data "formatedData" back into raw string """
         self.dataString = ""
         cursor = 0
         for field in self.fields:
             if field.arraySize == 1:
-                padding = field.range_[0] - cursor
-                zeroPadding = "{0:"+"<0{0}s".format(padding*2)+"}"
-                if padding > 0:
-                    self.dataString += zeroPadding.format("") + " "
+                self.dataString += PASParsedObject.paddingString(field.range_[0], cursor)
                 self.dataString += formatedData[field.nameOfField] + " "
                 cursor = field.range_[1] + 1
             else:
-                padding = field.range_[0][0] - cursor
-                zeroPadding = "{0:"+"<0{0}s".format(padding*2)+"}"
-                if padding > 0:
-                    self.dataString += zeroPadding.format("") + " "
+                self.dataString += PASParsedObject.paddingString(field.range_[0][0], cursor)
                 for i in range(0, field.arraySize):
                     self.dataString += formatedData[field.nameOfField][i] + " "
-                cursor = field.range_[field.arraySize - 1][1] + 1
+                cursor = field.range_[-1][1] + 1
 
         if self.dataString.endswith(' '):
             self.dataString = self.dataString[:-1]
@@ -54,7 +93,8 @@ class PASParsedObject:
         if fieldName not in self.formatedData:
             raise KeyError("Cannot modify field {0} in object {1}: it does not exist".format(fieldName, self.objectName))
         else:
-            if re.match(r'^([0-9]|[a-fA-F])+$', newValue, flags=re.I) is None:
+            newValue = newValue.upper()
+            if re.match(r'^([0-9]|[A-F])+$', newValue) is None:
                 raise PASParsingException("Value {0} is invalid, it must be an hexadecimal number".format(newValue))
             if len(newValue) % 2 != 0:
                 newValue = "0" + newValue
@@ -151,6 +191,9 @@ class PASParsedObject:
                 description += "{0}\t\t: Array {1} elements of type {2} from {3} to {4} each element has a size: {5}\n"\
                 .format(index.nameOfField, index.arraySize, index.typeName, index.range_[0][0], index.range_[index.arraySize - 1][1],
                     index.size)
+        description += "spectrum :     {0}\n".format(self.spectrum)
+        if bool(self.formatedData):
+            description += "data     :     {0}".format(self.writeFormatedData(self.formatedData))
         return description
 
     def __setitem__(self, fieldId, newValue):

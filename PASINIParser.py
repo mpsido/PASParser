@@ -18,16 +18,21 @@ class PASINIParser(ConfigParser.RawConfigParser):
     def __init__(self):
         ConfigParser.RawConfigParser.__init__(self)
         self.optionxform = str
+        self.data =""
+        self.objectId = ""
 
     def parse(self,  ELITE, start_index):
+        self.objectId = start_index
         self.fileName = ELITE+"/"+start_index
         self.read(self.fileName)
 
     def getData(self):
-        return self.get('PAS_OD_WRITE', 'DATA')
+        self.data = self.get('PAS_OD_WRITE', 'DATA')
+        return self.data
 
     def setData(self, newValue):
-        return self.set('PAS_OD_WRITE', 'DATA', newValue)
+        data = newValue
+        self.set('PAS_OD_WRITE', 'DATA', data)
 
     def write(self):
         with open(self.fileName, 'wb') as configFile:
