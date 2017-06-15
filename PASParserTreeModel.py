@@ -14,190 +14,190 @@ ENUM_TYPE_NODE_TYPE_IN_OBJECT = 2
 ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT = 3
 
 class PASObjectNode(object):
-	def __init__(self, name, range_, size, nb_elements, pasTypeOrObject, parent=None):
+    def __init__(self, name, range_, size, nb_elements, pasTypeOrObject, parent=None):
 
-		self.name = name
-		self.range_ = range_
-		self.size = size
-		self.nb_elements = nb_elements
-		self.pasTypeOrObject = pasTypeOrObject
+        self.name = name
+        self.range_ = range_
+        self.size = size
+        self.nb_elements = nb_elements
+        self.pasTypeOrObject = pasTypeOrObject
 
-		if parent == None:
-			self.typeOfNode = ENUM_TYPE_NODE_ROOT
-		else:
-			self.typeOfNode = parent.typeOfNode + 1
+        if parent == None:
+            self.typeOfNode = ENUM_TYPE_NODE_ROOT
+        else:
+            self.typeOfNode = parent.typeOfNode + 1
 
-		self.parent = parent
-		self.children = []
+        self.parent = parent
+        self.children = []
 
-		self.setParent(parent)
+        self.setParent(parent)
 
-	def setParent(self, parent):
-		if parent != None:
-			self.parent = parent
-			self.parent.appendChild(self)
-		else:
-			self.parent = None
+    def setParent(self, parent):
+        if parent != None:
+            self.parent = parent
+            self.parent.appendChild(self)
+        else:
+            self.parent = None
 
-	def appendChild(self, child):
-		self.children.append(child)
+    def appendChild(self, child):
+        self.children.append(child)
 
-	def childAtRow(self, row):
-		return self.children[row]
+    def childAtRow(self, row):
+        return self.children[row]
 
-	def rowOfChild(self, child):
-		for i, item in enumerate(self.children):
-			if item == child:
-				return i
-		return -1
+    def rowOfChild(self, child):
+        for i, item in enumerate(self.children):
+            if item == child:
+                return i
+        return -1
 
-	def removeChild(self, row):
-		value = self.children[row]
-		self.children.remove(value)
+    def removeChild(self, row):
+        value = self.children[row]
+        self.children.remove(value)
 
-		return True
+        return True
 
-	def __len__(self):
-		return len(self.children)
+    def __len__(self):
+        return len(self.children)
 
 class PASParserTreeModel(QAbstractItemModel):
 
-	def __init__(self, parent=None):
-		super(PASParserTreeModel, self).__init__(parent)
+    def __init__(self, parent=None):
+        super(PASParserTreeModel, self).__init__(parent)
 
-		self.treeView = parent
-		self.headers = [tr('Name'),tr('Range'),tr('Size'), tr('Nb elements'), tr('Value')]
+        self.treeView = parent
+        self.headers = [tr('Name'),tr('Range'),tr('Size'), tr('Nb elements'), tr('Value')]
 
-		self.nbColumns = 5
+        self.nbColumns = 5
 
-		# Create root item
-		self.root = PASObjectNode('', '', '', '', '', None)
-
-
-	def flags(self, index):
-		flags = QAbstractItemModel.flags(self, index)
-		node = self.nodeFromIndex(index)
-		if index.column() == 4 and (node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT or
-			(node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT and len(node) == 0)):
-			flags |= Qt.ItemIsEditable
-		return flags
-
-	def headerData(self, section, orientation, role):
-		if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-			return QVariant(self.headers[section])
-		return QVariant()
-
-	def insertRow(self, row, parent):
-		return self.insertRows(row, 1, parent)
+        # Create root item
+        self.root = PASObjectNode('', '', '', '', '', None)
 
 
-	def insertRows(self, row, count, parent):
-		self.beginInsertRows(parent, row, (row + (count - 1)))
-		self.endInsertRows()
-		return True
+    def flags(self, index):
+        flags = QAbstractItemModel.flags(self, index)
+        node = self.nodeFromIndex(index)
+        if index.column() == 4 and (node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT or
+            (node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT and len(node) == 0)):
+            flags |= Qt.ItemIsEditable
+        return flags
+
+    def headerData(self, section, orientation, role):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return QVariant(self.headers[section])
+        return QVariant()
+
+    def insertRow(self, row, parent):
+        return self.insertRows(row, 1, parent)
 
 
-	def removeRow(self, row, parentIndex):
-		return self.removeRows(row, 1, parentIndex)
+    def insertRows(self, row, count, parent):
+        self.beginInsertRows(parent, row, (row + (count - 1)))
+        self.endInsertRows()
+        return True
 
 
-	def removeRows(self, row, count, parentIndex):
-		self.beginRemoveRows(parentIndex, row, row)
-		node = self.nodeFromIndex(parentIndex)
-		node.removeChild(row)
-		self.endRemoveRows()
-
-		return True
+    def removeRow(self, row, parentIndex):
+        return self.removeRows(row, 1, parentIndex)
 
 
-	def index(self, row, column, parent):
-		node = self.nodeFromIndex(parent)
-		return self.createIndex(row, column, node.childAtRow(row))
+    def removeRows(self, row, count, parentIndex):
+        self.beginRemoveRows(parentIndex, row, row)
+        node = self.nodeFromIndex(parentIndex)
+        node.removeChild(row)
+        self.endRemoveRows()
 
-	def setData(self, index, value, role = Qt.EditRole):
-		success = False
-		if role == Qt.EditRole:
-			node = self.nodeFromIndex(index)
-			if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
-				node.pasTypeOrObject.value = value.toString()
-				sucess = True
-			elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:
-				node.pasTypeOrObject[node.parent.rowOfChild(node)] = value.toString()
-				sucess = True
-		if (success):
-			self.dataChanged.emit(index, index)
-		return success
-
-	def data(self, index, role):
-		if role == Qt.DecorationRole:
-			return QVariant()
-
-		if role == Qt.TextAlignmentRole:
-			return QVariant(int(Qt.AlignTop | Qt.AlignLeft))
-
-		if role != Qt.DisplayRole:
-			return QVariant()
-
-		node = self.nodeFromIndex(index)
-
-		if index.column() == 0:
-			return QVariant(node.name)
-		elif index.column() == 1:
-			return QVariant(node.range_)
-		elif index.column() == 2:
-			return QVariant(node.size)
-		elif index.column() == 3:
-			return QVariant(node.nb_elements)
-		elif index.column() == 4:
-			if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
-				return QVariant(node.pasTypeOrObject.value)
-			elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:
-				return QVariant( node.pasTypeOrObject[node.parent.rowOfChild(node)] )
-			else:
-				return QVariant()
-		else:
-			return QVariant()
+        return True
 
 
-	def columnCount(self, parent):
-		return self.nbColumns
+    def index(self, row, column, parent):
+        node = self.nodeFromIndex(parent)
+        return self.createIndex(row, column, node.childAtRow(row))
+
+    def setData(self, index, value, role = Qt.EditRole):
+        success = False
+        if role == Qt.EditRole:
+            node = self.nodeFromIndex(index)
+            if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
+                node.pasTypeOrObject.value = value.toString()
+                sucess = True
+            elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:
+                node.pasTypeOrObject[node.parent.rowOfChild(node)] = value.toString()
+                sucess = True
+        if (success):
+            self.dataChanged.emit(index, index)
+        return success
+
+    def data(self, index, role):
+        if role == Qt.DecorationRole:
+            return QVariant()
+
+        if role == Qt.TextAlignmentRole:
+            return QVariant(int(Qt.AlignTop | Qt.AlignLeft))
+
+        if role != Qt.DisplayRole:
+            return QVariant()
+
+        node = self.nodeFromIndex(index)
+
+        if index.column() == 0:
+            return QVariant(node.name)
+        elif index.column() == 1:
+            return QVariant(node.range_)
+        elif index.column() == 2:
+            return QVariant(node.size)
+        elif index.column() == 3:
+            return QVariant(node.nb_elements)
+        elif index.column() == 4:
+            if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
+                return QVariant(node.pasTypeOrObject.value)
+            elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:
+                return QVariant( node.pasTypeOrObject[node.parent.rowOfChild(node)] )
+            else:
+                return QVariant()
+        else:
+            return QVariant()
 
 
-	def rowCount(self, parent):
-		node = self.nodeFromIndex(parent)
-		if node is None:
-			return 0
-		return len(node)
+    def columnCount(self, parent):
+        return self.nbColumns
 
 
-	def parent(self, child):
-		if not child.isValid():
-			return QModelIndex()
+    def rowCount(self, parent):
+        node = self.nodeFromIndex(parent)
+        if node is None:
+            return 0
+        return len(node)
 
-		node = self.nodeFromIndex(child)
 
-		if node is None:
-			return QModelIndex()
+    def parent(self, child):
+        if not child.isValid():
+            return QModelIndex()
 
-		parent = node.parent
+        node = self.nodeFromIndex(child)
 
-		if parent is None:
-			return QModelIndex()
+        if node is None:
+            return QModelIndex()
 
-		grandparent = parent.parent
-		if grandparent is None:
-			return QModelIndex()
-		row = grandparent.rowOfChild(parent)
+        parent = node.parent
 
-		assert row != - 1
-		return self.createIndex(row, 0, parent)
+        if parent is None:
+            return QModelIndex()
 
-	def isChildOfRoot(self, index):
-		return self.parent(index) == QModelIndex()
+        grandparent = parent.parent
+        if grandparent is None:
+            return QModelIndex()
+        row = grandparent.rowOfChild(parent)
 
-	def nodeFromIndex(self, index):
-		return index.internalPointer() if index.isValid() else self.root
+        assert row != - 1
+        return self.createIndex(row, 0, parent)
 
-	def changeData(self, index):
-		self.dataChanged.emit(index, index)
+    def isChildOfRoot(self, index):
+        return self.parent(index) == QModelIndex()
+
+    def nodeFromIndex(self, index):
+        return index.internalPointer() if index.isValid() else self.root
+
+    def changeData(self, index):
+        self.dataChanged.emit(index, index)
 

@@ -15,17 +15,21 @@ import ConfigParser
 
 
 class PASINIParser(ConfigParser.RawConfigParser):
-	def __init__(self):
-		ConfigParser.RawConfigParser.__init__(self)
+    def __init__(self):
+        ConfigParser.RawConfigParser.__init__(self)
 
-	def parse(self,  ELITE, start_index):
-		self.read(ELITE+"/"+start_index)
+    def parse(self,  ELITE, start_index):
+        self.fileName = ELITE+"/"+start_index
+        self.read(self.fileName)
 
-	def getData(self):
-		return self.get('PAS_OD_WRITE', 'DATA')
+    def getData(self):
+        return self.get('PAS_OD_WRITE', 'DATA')
 
-	def setData(self, newValue):
-		return self.set('PAS_OD_WRITE', 'DATA', newValue)
+    def setData(self, newValue):
+        return self.set('PAS_OD_WRITE', 'DATA', newValue)
 
+    def write(self):
+        with open(self.fileName, 'wb') as configFile:
+            ConfigParser.RawConfigParser.write(self, configFile)
 
 
