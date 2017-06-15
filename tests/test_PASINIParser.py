@@ -11,8 +11,7 @@ sys.path.append(lib_path)
 import unittest
 
 from PASINIParser import *
-from PASType import *
-from PASObject import *
+from PASObjReader import *
 
 
 class Test_PASINIParser(unittest.TestCase):

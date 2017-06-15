@@ -17,6 +17,7 @@ import ConfigParser
 class PASINIParser(ConfigParser.RawConfigParser):
     def __init__(self):
         ConfigParser.RawConfigParser.__init__(self)
+        self.optionxform = str
 
     def parse(self,  ELITE, start_index):
         self.fileName = ELITE+"/"+start_index

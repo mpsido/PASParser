@@ -9,7 +9,7 @@ This class uses object definitions from OD.xml and OD_types.xml files
 import re
 from PASType import *
 from lxml import etree
-from PASObjectParsing import *
+from PASParsedObject import *
 from print_debug import *
 
 DEBUG_FLAG_PADDING = 1

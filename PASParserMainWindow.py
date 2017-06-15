@@ -7,8 +7,7 @@ from PyQt4.QtCore import QT_TR_NOOP as tr
 import sys
 import re
 import os
-from PASObject import *
-from PASType import *
+from PASObjReader import *
 from PASINIParser import *
 from PASParserTreeModel import PASParserTreeModel,PASObjectNode
 

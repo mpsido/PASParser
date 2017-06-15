@@ -9,8 +9,7 @@ lib_path = os.path.abspath('.')
 sys.path.append(lib_path)
 
 import unittest
-from PASType import *
-from PASObject import *
+from PASObjReader import *
 from print_debug import *
 
 

@@ -5,7 +5,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtCore import QT_TR_NOOP as tr
 
-from PASObjectParsing import *
+from PASParsedObject import *
 
 
 ENUM_TYPE_NODE_ROOT = 0
