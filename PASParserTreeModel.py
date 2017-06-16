@@ -112,7 +112,11 @@ class PASParserTreeModel(QAbstractItemModel):
 
     def index(self, row, column, parent):
         node = self.nodeFromIndex(parent)
-        return self.createIndex(row, column, node.childAtRow(row))
+        if row < len(node):
+            return self.createIndex(row, column, node.childAtRow(row))
+        else:
+            return QModelIndex()
+
 
     def setData(self, index, value, role = Qt.EditRole):
         success = False
