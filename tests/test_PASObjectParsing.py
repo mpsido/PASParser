@@ -100,7 +100,7 @@ class Test_PASObjReader(unittest.TestCase):
         self.assertEqual(self.objReader["74000"][1].range_, (2,33))
         self.assertEqual(self.objReader["74000"][2].range_, (34,43))
 
-        self.assertEqual(self.objReader["74000"].readData("02 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"),
+        self.assertDictEqual(self.objReader["74000"].readData("02 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"),
         {'sub0':'02',
         'xPSEConfig':'606D0C006054D052584D50463863580260096400D00764003200640001010104',
         'xExtBoardPowerConfig':'00A41011301068ABE000'})
