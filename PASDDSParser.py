@@ -5,6 +5,7 @@ import os
 import re
 import ConfigParser
 from print_debug import *
+from PASObjReader import *
 
 ENUM_DEBUG_OPT_PARSING = 1
 
@@ -20,35 +21,33 @@ class PASDDSFileReadingException(Exception):
         """On renvoie le message"""
         return self.message
 
-class PASINIParser(ConfigParser.RawConfigParser):
-    def __init__(self):
-        ConfigParser.RawConfigParser.__init__(self)
-        self.optionxform = str
-        self.data =""
-        self.objectId = ""
-
-    def parse(self,  ELITE, start_index):
-        self.objectId = start_index
-        self.fileName = ELITE+"/"+start_index
-        self.read(self.fileName)
-
-    def getData(self):
-        self.data = self.get('PAS_OD_WRITE', 'DATA')
-        return self.data
-
-    def setData(self, newValue):
-        data = newValue
-        self.set('PAS_OD_WRITE', 'DATA', data)
-
-    def write(self):
-        with open(self.fileName, 'wb') as configFile:
-            ConfigParser.RawConfigParser.write(self, configFile)
-
 class INIBlock:
     def __init__(self):
         self.name = ""
         self.textContent = ""
-        self.iniOptions = {}
+#        self.iniOptions = {} #avoid using dico to keep order
+        self.iniOptionsNames = []
+        self.iniOptionsValues = []
+
+    def __repr__(self):
+        description = ""
+#        for option, value in self.iniOptions.items():
+        for i in range(0, len(self.iniOptionsNames)):
+            option = self.iniOptionsNames[i]
+            value = self.iniOptionsValues[i]
+            description += option + "=" + value + "\n"
+        return description
+
+    def __getitem__(self, optionName):
+        return self.iniOptionsValues[self.iniOptionsNames.index(optionName)]
+
+
+    def __setitem__(self, optionName, newValue):
+        self.iniOptionsValues[self.iniOptionsNames.index(optionName)] = newValue
+
+    def addItem(self, optionName, value):
+        self.iniOptionsNames.append(optionName)
+        self.iniOptionsValues.append(value)
 
 class PASDDSParser:
     def __init__(self):
@@ -58,7 +57,18 @@ class PASDDSParser:
         self.iniBlockNames = []
         self.iniBlockTexts = []
         self.iniBlocks = []
+        self.objReader = PASObjReader()
 
+    def __repr__(self):
+        description = ""
+        for i,blockName in enumerate(self.iniBlockNames):
+            description += blockName + "\n"
+            description += str(self.iniBlocks[i]) #+ "\n\n"
+        return description
+
+
+    def parse(self,  path, fileName):
+        self.open(path+"/"+fileName)
 
 
     def open(self, filePath):
@@ -72,18 +82,40 @@ class PASDDSParser:
         self.filePath = filePath
         self.fileName = fileName
 
-        file = open(filePath, 'r')
-        self.fileTextContent = file.read()
-
-        file.close()
+        with open(filePath, 'r') as file:
+            self.fileTextContent = file.read()
+            file.close()
 
         self.parseBlocks()
 
         self.parseValues()
 
+    def write(self):
+        with open(self.filePath, 'w') as file:
+            file.write(str(self))
+            file.close()
+
+    def sections(self):
+        return self.iniBlockNames
+
+    def __getitem__(self,blockName):
+        return self.iniBlocks[self.iniBlockNames.index('['+blockName+']')]
+
+
+    def getData(self):
+        return self['PAS_OD_WRITE']['DATA']
+
+
+    def setData(self, newValue):
+        if self.objReader[self.fileName].isDataValid(newValue):
+            self['PAS_OD_WRITE']['DATA'] = newValue
+        else:
+            raise PASDDSFileReadingException("Data is invalid :\nDATA     = {0}\nSPECTRUM = {1}".format(newValue, self.objReader[self.fileName].spectrum))
+
+
     def parseBlocks(self):
         blocksSeparator = re.compile("^\s*\[.*\](?:\s*)$", flags = re.MULTILINE)
-        self.iniBlockNames = blocksSeparator.findall(self.fileTextContent)
+        self.iniBlockNames = [blockName.lstrip().rstrip() for blockName in blocksSeparator.findall(self.fileTextContent)]
 
         self.iniBlockTexts = [ block.lstrip() for block in  blocksSeparator.split(self.fileTextContent) ]
         if self.iniBlockTexts[0].lstrip() == '':
@@ -109,7 +141,7 @@ class PASDDSParser:
                     optName = opt.group(1)
                     optValue = opt.group(2)
                     print_debug("{0} : {1}".format(optName, optValue), ENUM_DEBUG_OPT_PARSING)
-                    iniBlock.iniOptions[optName] = optValue
+                    iniBlock.addItem(optName, optValue)
 
             self.iniBlocks.append(iniBlock)
 

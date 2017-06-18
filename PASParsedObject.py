@@ -21,6 +21,7 @@ class PASParsedObject:
     def __init__(self, objectName):
         self.fields = [] #list of PASParsedTypeInObject
         self.spectrum = ""
+        self.groupName = ""
         self.objectName = objectName
         self.dataString = ""
         self.formatedData = {}

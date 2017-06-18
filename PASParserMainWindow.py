@@ -8,7 +8,7 @@ import sys
 import re
 import os
 from PASObjReader import *
-from PASINIParser import *
+from PASDDSParser import *
 from PASParserTreeModel import PASParserTreeModel,PASObjectNode
 from PASParserProxyModel import *
 
@@ -23,7 +23,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.proxyModel = {}
         self.treeView = {}
 
-        self.iniParser = PASINIParser()
+        self.ddsParser = PASDDSParser()
         self.objReader = PASObjReader()
 
         #temporary code for tests:
@@ -81,8 +81,8 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         model = self.model[path]
         if model.rowCount(index) == 0 and model.isChildOfRoot(index):
             node = model.nodeFromIndex(index)
-            self.iniParser.parse(path, node.name)
-            data = self.iniParser.getData()
+            self.ddsParser.parse(path, node.name)
+            data = self.ddsParser.getData()
             self.objReader[node.name].readData(data)
 
             for j, field in enumerate(self.objReader[node.name].fields):

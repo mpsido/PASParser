@@ -88,6 +88,7 @@ class PASObjReader:
                 l = 0
                 byteNumber = 0
                 parsedObject = PASParsedObject(objectId)
+                parsedObject.groupName = self._PASObjXMLDict[objectId].getparent().get('name')
                 for typeNode in self._PASObjXMLDict[objectId].findall('subindex'): #<subindex name="" type="type_0230" version="03150000">
                     nameOfField = typeNode.get('name')
                     typeName = typeNode.get('type')
