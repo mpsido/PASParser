@@ -8,7 +8,6 @@ from PyQt4.QtCore import QT_TR_NOOP as tr
 from PASParsedObject import *
 from PASObjectNode import *
 
-
 class PASParserTreeModel(QAbstractItemModel):
 
     def __init__(self, parent=None):
@@ -73,10 +72,10 @@ class PASParserTreeModel(QAbstractItemModel):
             node = self.nodeFromIndex(index)
             if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
                 node.pasTypeOrObject.value = str(value.toString())
-                sucess = True
+                success = True
             elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:
                 node.pasTypeOrObject[node.parent.rowOfChild(node)] = str(value.toString())
-                sucess = True
+                success = True
         if (success):
             self.dataChanged.emit(index, index)
         return success

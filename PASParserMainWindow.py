@@ -13,7 +13,7 @@ from PASParserTreeModel import PASParserTreeModel,PASObjectNode
 from PASParserProxyModel import *
 from SidePanelProxyModel import *
 
-import logging, sys
+import logging
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 import ui_MainWindow
@@ -53,6 +53,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         shortPath = re.split(r'[/\\]', fullPath)[-1]
 
         model = PASParserTreeModel(self)
+        model.dataChanged.connect(self.repaintViews)
         proxyModel = PASParserProxyModel(self)
         proxyModel.setSourceModel(model)
         self.model[fullPath] = model
@@ -109,8 +110,17 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
         elif node.typeOfNode == ENUM_TYPE_NODE_OBJECT or node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
             logging.debug("Set node {0}".format(node.name))
-            self.sidePanelModel[path].setCurrentNode(node)
+            self.sidePanelModel[path].setCurrentNodeIndex(index)
             self.tableView.setModel(self.sidePanelModel[path])
+
+
+    @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex) # signal with arguments
+    def repaintViews(self, index, indexEnd):
+        path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
+        self.proxyModel[path].layoutChanged.emit()
+        self.sidePanelModel[path].layoutChanged.emit()
+
+
 
     def closeEvent(self, event):
         print("Bye bye")

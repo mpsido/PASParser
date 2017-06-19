@@ -24,15 +24,24 @@ class SidePanelProxyModel(QSortFilterProxyModel):
         else:
             return 0
 
-    def setCurrentNode(self, node):
-        self.currentNode = node
-#        self.dataChanged.emit(self.index(0,0), self.index(self.rowCount(), 1))
-        self.layoutChanged.emit()
+    def setCurrentNodeIndex(self, index):
+        node = self.sourceModel().nodeFromIndex(index)
+        print ("type of node", node.typeOfNode)
+        if node.typeOfNode == ENUM_TYPE_NODE_OBJECT or (node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT and len(node) > 0):
+            self.currentNodeIndex = index
+            self.currentNode = node
+            self.layoutChanged.emit()
+
+
+
+    def setData(self, index, value, role = Qt.EditRole):
+        return self.sourceModel().setData(self.sourceModel().index(index.row(), index.column(), self.currentNodeIndex), value, role)
 
 
     def flags(self, index):
         flags = QAbstractItemModel.flags(self, index)
-        if index.column() == 1:
+        sourceIndex = self.mapToSource(index)
+        if index.column() == 1 and len(self.currentNode.childAtRow(sourceIndex.row())) == 0:
             flags |= Qt.ItemIsEditable
         return flags
 
@@ -49,7 +58,7 @@ class SidePanelProxyModel(QSortFilterProxyModel):
                     return QVariant(self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject.value)
                 elif self.currentNode.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
                     if len(self.currentNode) > 0:
-                        return QVariant( self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject[sourceIndex.row()] )
+                        return QVariant( self.currentNode.pasTypeOrObject[sourceIndex.row()] )
                     else:
                         return QVariant(self.currentNode.pasTypeOrObject.value)
                 else:
