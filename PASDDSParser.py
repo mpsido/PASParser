@@ -79,6 +79,8 @@ class PASDDSParser:
         if re.match(r'^([0-9]|[a-f])+$', fileName, flags=re.I) is None:
             raise PASDDSFileReadingException("Apparently file {0} is not a dds object file".format(filePath))
 
+        self.__init__()
+
         self.filePath = filePath
         self.fileName = fileName
 

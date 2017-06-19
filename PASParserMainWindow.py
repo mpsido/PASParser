@@ -54,6 +54,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
         model = PASParserTreeModel(self)
         model.dataChanged.connect(self.repaintViews)
+        model.dataChanged.connect(self.setData)
         proxyModel = PASParserProxyModel(self)
         proxyModel.setSourceModel(model)
         self.model[fullPath] = model
@@ -113,6 +114,18 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
             self.sidePanelModel[path].setCurrentNodeIndex(index)
             self.tableView.setModel(self.sidePanelModel[path])
 
+
+
+    @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex) # signal with arguments
+    def setData(self, index, indexEnd):
+        path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
+        node = self.model[path].nodeFromIndex(index)
+        objectName = node.pasTypeOrObject.objectName
+        self.ddsParser.parse(path, objectName)
+        data = self.objReader[objectName].dataString
+        if self.objReader[objectName].isDataValid(data):
+            self.ddsParser.setData(data)
+            self.ddsParser.write()
 
     @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex) # signal with arguments
     def repaintViews(self, index, indexEnd):
