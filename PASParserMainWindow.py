@@ -11,6 +11,10 @@ from PASObjReader import *
 from PASDDSParser import *
 from PASParserTreeModel import PASParserTreeModel,PASObjectNode
 from PASParserProxyModel import *
+from SidePanelProxyModel import *
+
+import logging, sys
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 import ui_MainWindow
 
@@ -20,6 +24,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.setupUi(self)
         self.pasDir = []
         self.model = {}
+        self.sidePanelModel = {}
         self.proxyModel = {}
         self.treeView = {}
 
@@ -52,6 +57,9 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         proxyModel.setSourceModel(model)
         self.model[fullPath] = model
         self.proxyModel[fullPath] = proxyModel
+        sidePanelModel = SidePanelProxyModel(self)
+        self.sidePanelModel[fullPath] = sidePanelModel
+        sidePanelModel.setSourceModel(model)
         treeView = QtGui.QTreeView()
         self.treeView[fullPath] = treeView
 
@@ -72,15 +80,14 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         model.insertRows(0, len(objects), QtCore.QModelIndex())
 
 
-
     @QtCore.pyqtSlot(QtCore.QModelIndex) # signal with arguments
     def on_itemClicked(self, proxyIndex):
         """Creates the children of an object when we click on it"""
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         index = self.proxyModel[path].mapToSource(proxyIndex)
         model = self.model[path]
+        node = model.nodeFromIndex(index)
         if model.rowCount(index) == 0 and model.isChildOfRoot(index):
-            node = model.nodeFromIndex(index)
             self.ddsParser.parse(path, node.name)
             data = self.ddsParser.getData()
             self.objReader[node.name].readData(data)
@@ -100,6 +107,10 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
             if model.insertRows(0, self.objReader[node.name].nbFields(), index) == False:
                 print("Failed to insert row to {0}".format(model.nodeFromIndex(index).name))
 
+        elif node.typeOfNode == ENUM_TYPE_NODE_OBJECT or node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
+            logging.debug("Set node {0}".format(node.name))
+            self.sidePanelModel[path].setCurrentNode(node)
+            self.tableView.setModel(self.sidePanelModel[path])
 
     def closeEvent(self, event):
         print("Bye bye")
