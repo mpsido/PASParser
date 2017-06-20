@@ -34,7 +34,7 @@ class PASParserTreeModel(QAbstractItemModel):
     def flags(self, index):
         flags = QAbstractItemModel.flags(self, index)
         node = self.nodeFromIndex(index)
-        if index.column() == 4 and (node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT or
+        if index.column() == eValue and (node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT or
             (node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT and len(node) == 0)):
             flags |= Qt.ItemIsEditable
         return flags
