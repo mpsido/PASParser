@@ -65,21 +65,21 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         treeView = QtGui.QTreeView()
         self.treeView[fullPath] = treeView
 
+        treeView.setModel(proxyModel)
         treeView.setColumnWidth(0, 190)
-        treeView.setColumnWidth(1, 130)
+        treeView.setColumnWidth(1, 190)
         treeView.setColumnWidth(2, 50)
         treeView.setColumnWidth(3, 100)
         treeView.clicked.connect(self.on_itemClicked)
-        treeView.setModel(proxyModel)
         tabIndex = self.tabWidget.addTab(treeView, shortPath)
         # we save the full path in the toolTip we are gonna need it later (we can also use tabData)
         self.tabWidget.setTabToolTip(tabIndex, fullPath)
 
         #find files whose name is a hexadecimal number
-        objects = filter(lambda x: re.match(r'^[0-9A-Fa-f]+$', x), os.listdir(fullPath))
-        for obj in objects:
-            PASObjectNode(obj, '', '', '', '', model.root)
-        model.insertRows(0, len(objects), QtCore.QModelIndex())
+        indexes = filter(lambda x: re.match(r'^[0-9A-Fa-f]+$', x), os.listdir(fullPath))
+        for id in indexes:
+            PASObjectNode(id, '', '', '', PASParsedObject(0), model.root)
+        model.insertRows(0, len(indexes), QtCore.QModelIndex())
 
 
     @QtCore.pyqtSlot(QtCore.QModelIndex) # signal with arguments
@@ -90,27 +90,29 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         model = self.model[path]
         node = model.nodeFromIndex(index)
         if model.rowCount(index) == 0 and model.isChildOfRoot(index):
-            self.ddsParser.parse(path, node.name)
+            self.ddsParser.parse(path, node.id)
             data = self.ddsParser.getData()
-            self.objReader[node.name].readData(data)
+            node.rangeOrObjectName = self.objReader[node.id].objectName
+            self.objReader[node.id].readData(data)
+            node.pasTypeOrObject = self.objReader[node.id]
 
-            for j, field in enumerate(self.objReader[node.name].fields):
+            for j, field in enumerate(self.objReader[node.id].fields):
                 if field.arraySize == 1:
                     PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0], field.range_[1]),
-                        field.size, field.arraySize, self.objReader[node.name][field.nameOfField], node)
+                        field.size, field.arraySize, self.objReader[node.id][field.nameOfField], node)
                 else: #in case of array append each field of the array
                     arrayNode = PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0][0], field.range_[-1][1]),
-                        field.size, field.arraySize, self.objReader[node.name][field.nameOfField], node)
+                        field.size, field.arraySize, self.objReader[node.id][field.nameOfField], node)
                     for i in range(0, field.arraySize):
                         PASObjectNode(field.nameOfField + "[{}]".format(i), "byte {0} to {1}".format(field.range_[i][0], field.range_[i][1]),
-                                            field.size, field.arraySize, self.objReader[node.name][field.nameOfField], arrayNode)
+                                            field.size, field.arraySize, self.objReader[node.id][field.nameOfField], arrayNode)
                     if model.insertRows(0, field.arraySize, model.index(i, 0, model.index(j, 0, index) )) == False:
                         print("Failed to insert array rows to {0}".format(field.nameOfField))
-            if model.insertRows(0, self.objReader[node.name].nbFields(), index) == False:
-                print("Failed to insert row to {0}".format(model.nodeFromIndex(index).name))
+            if model.insertRows(0, self.objReader[node.id].nbFields(), index) == False:
+                print("Failed to insert row to {0}".format(model.nodeFromIndex(index).id))
 
         elif node.typeOfNode == ENUM_TYPE_NODE_OBJECT or node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
-            logging.debug("Set node {0}".format(node.name))
+            logging.debug("Set node {0}".format(node.id))
             self.sidePanelModel[path].setCurrentNodeIndex(index)
             self.tableView.setModel(self.sidePanelModel[path])
 
@@ -120,12 +122,12 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
     def setData(self, index, indexEnd):
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         node = self.model[path].nodeFromIndex(index)
-        objectName = node.pasTypeOrObject.objectName
-        self.ddsParser.parse(path, objectName)
-        data = self.objReader[objectName].dataString
-        if self.objReader[objectName].isDataValid(data):
+        id = node.pasTypeOrObject.startIndex
+        self.ddsParser.parse(path, id) #TODO c'est pas top de reparser à chaque fois... avoir un object par parseur ?
+        data = self.objReader[id].dataString
+        if self.objReader[id].isDataValid(data):
             self.ddsParser.setData(data)
-            self.ddsParser.write()
+            self.ddsParser.write() #TODO demander confirmation à l'utilisateur pour faire un enregistrement
 
     @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex) # signal with arguments
     def repaintViews(self, index, indexEnd):

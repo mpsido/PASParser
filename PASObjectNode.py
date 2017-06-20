@@ -8,10 +8,9 @@ ENUM_TYPE_NODE_TYPE_IN_OBJECT = 2
 ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT = 3
 
 class PASObjectNode(object):
-    def __init__(self, name, range_, size, nb_elements, pasTypeOrObject, parent=None):
-
-        self.name = name
-        self.range_ = range_
+    def __init__(self, id, rangeOrObjectName, size, nb_elements, pasTypeOrObject, parent=None):
+        self.id = id
+        self.rangeOrObjectName = rangeOrObjectName
         self.size = size
         self.nb_elements = nb_elements
         self.pasTypeOrObject = pasTypeOrObject

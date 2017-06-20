@@ -14,12 +14,11 @@ class PASParsedTypeInObject(object):
     """Class that represents a type stored inside an object:
     it keeps the indexes where the data is stored inside the object and provides tools the read and write the data"""
     def __init__(self):
-        self.objectName = ""
+        self.startIndex = ""
         self.nameOfField = ""
         self.typeName = ""
         self.arraySize = 0
         self.size = 0
-
 
     def _get_value(self):
         return self._motherObject.formatedData[self.nameOfField]
@@ -34,7 +33,7 @@ class PASParsedTypeInObject(object):
             self._motherObject.modifyData(self.nameOfField, newValue, index)
         else:
             raise IndexError("Trying to set data {0} of type {1} but {4} is not an array in object {3}"
-                .format(index, self.typeName, self.objectName, self.nameOfField))
+                .format(index, self.typeName, self.startIndex, self.nameOfField))
 
     def __getitem__(self, index):
         dataValue = ""
@@ -42,11 +41,11 @@ class PASParsedTypeInObject(object):
             dataValue = self._motherObject.formatedData[self.nameOfField][index]
         else:
             raise IndexError("Trying to read data {0} of type {1} but {4} is not an array in object {3}"
-                .format(index, self.typeName, self.objectName, self.nameOfField))
+                .format(index, self.typeName, self.startIndex, self.nameOfField))
         return dataValue
 
-    def setInfos(self, objectName, nameOfField, typeName, start_pos, size, arraySize, motherObject):
-        self.objectName = objectName
+    def setInfos(self, startIndex, nameOfField, typeName, start_pos, size, arraySize, motherObject):
+        self.startIndex = startIndex
         self.nameOfField = nameOfField
         self.typeName = typeName
         self.arraySize = arraySize

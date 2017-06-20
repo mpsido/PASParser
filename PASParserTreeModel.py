@@ -8,13 +8,25 @@ from PyQt4.QtCore import QT_TR_NOOP as tr
 from PASParsedObject import *
 from PASObjectNode import *
 
+#eColumnNumbers = enum
+(
+    eId,
+#    eObjectName,
+    eRange,
+    eSize,
+    eNbElements,
+    eValue
+)=range(5)
+
+
 class PASParserTreeModel(QAbstractItemModel):
 
     def __init__(self, parent=None):
         super(PASParserTreeModel, self).__init__(parent)
 
         self.treeView = parent
-        self.headers = [tr('Name'),tr('Range'),tr('Size'), tr('Nb elements'), tr('Value')]
+
+        self.headers = [tr('Start index'), tr('Range'),tr('Size'), tr('Nb elements'), tr('Value')]
 
         self.nbColumns = 5
 
@@ -92,15 +104,20 @@ class PASParserTreeModel(QAbstractItemModel):
 
         node = self.nodeFromIndex(index)
 
-        if index.column() == 0:
-            return QVariant(node.name)
-        elif index.column() == 1:
-            return QVariant(node.range_)
-        elif index.column() == 2:
+        if index.column() == eId:
+            return QVariant(node.id)
+#        elif index.column() == eObjectName:
+#            return QVariant(node.eObjectName)
+        elif index.column() == eRange:
+                return QVariant(node.rangeOrObjectName)
+        elif index.column() == eSize:
             return QVariant(node.size)
-        elif index.column() == 3:
-            return QVariant(node.nb_elements)
-        elif index.column() == 4:
+        elif index.column() == eNbElements:
+            if node.typeOfNode == ENUM_TYPE_NODE_OBJECT:
+                return QVariant(node.pasTypeOrObject.objectCount)
+            else:
+                return QVariant(node.nb_elements)
+        elif index.column() == eValue:
             if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
                 return QVariant(node.pasTypeOrObject.value)
             elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:

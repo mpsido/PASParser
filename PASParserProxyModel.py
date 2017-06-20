@@ -15,7 +15,7 @@ class PASParserProxyModel(QtGui.QSortFilterProxyModel):
         sourceIndex = sourceModel.index(source_row, 0, source_parent)
         node = sourceModel.nodeFromIndex(sourceIndex)
         if node.typeOfNode == ENUM_TYPE_NODE_OBJECT:
-            if self.filterRegExp().indexIn(node.name) == -1:
+            if self.filterRegExp().indexIn(node.id) == -1:
                 accept = False
         return accept
 

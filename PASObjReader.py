@@ -26,7 +26,6 @@ class PASObjReader:
         if xmlFilePath == "":
             xmlFilePath = "OD.xml"
         self.OD = etree.parse(xmlFilePath)
-        self._PASObjDict = {}
         self._PASObjXMLDict = {}
         self._parsedObjects = {}
         self.typeReader = PASTypeReader()
@@ -40,9 +39,8 @@ class PASObjReader:
                 elt_id = elt.get('start_index').lower()
                 if re.match(r'0x[0-9A-Fa-f]+', elt_id) is not None:
                     elt_int_id = elt_id[2:]
-                    self._PASObjDict[elt_int_id] = elt.get('name')
                     self._PASObjXMLDict[elt_int_id] = elt
-                    elts += self._PASObjDict[elt_int_id] + " " + str(elt_id) + "\n"
+                    elts += elt.get('name') + " " + str(elt_id) + "\n"
                 else:
                     print ("start_index id={0} is not in format 0x[0-9A-Fa-f]+".format(elt_id+ " "))
             if elts.endswith('\n'):
@@ -89,6 +87,8 @@ class PASObjReader:
                 byteNumber = 0
                 parsedObject = PASParsedObject(objectId)
                 parsedObject.groupName = self._PASObjXMLDict[objectId].getparent().get('name')
+                parsedObject.objectName = self._PASObjXMLDict[objectId].get('name')
+                parsedObject.objectCount = int(self._PASObjXMLDict[objectId].find('count').get('value'))
                 for typeNode in self._PASObjXMLDict[objectId].findall('subindex'): #<subindex name="" type="type_0230" version="03150000">
                     nameOfField = typeNode.get('name')
                     typeName = typeNode.get('type')

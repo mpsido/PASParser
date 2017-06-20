@@ -26,7 +26,6 @@ class SidePanelProxyModel(QSortFilterProxyModel):
 
     def setCurrentNodeIndex(self, index):
         node = self.sourceModel().nodeFromIndex(index)
-        print ("type of node", node.typeOfNode)
         if node.typeOfNode == ENUM_TYPE_NODE_OBJECT or (node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT and len(node) > 0):
             self.currentNodeIndex = index
             self.currentNode = node
@@ -52,7 +51,7 @@ class SidePanelProxyModel(QSortFilterProxyModel):
         sourceIndex = self.mapToSource(index)
         if hasattr(self, 'currentNode'):
             if index.column() == 0:
-                return QVariant(self.currentNode.childAtRow(sourceIndex.row()).name)
+                return QVariant(self.currentNode.childAtRow(sourceIndex.row()).id)
             elif index.column() == 1:
                 if self.currentNode.typeOfNode == ENUM_TYPE_NODE_OBJECT:
                     return QVariant(self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject.value)

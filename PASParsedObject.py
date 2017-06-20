@@ -18,13 +18,14 @@ set_debug_flags(8)
 class PASParsedObject:
     """This class is a container for PASParsedTypeInObject objects, it constructs them and store them"""
 
-    def __init__(self, objectName):
+    def __init__(self, startIndex):
         self.fields = [] #list of PASParsedTypeInObject
         self.spectrum = ""
         self.groupName = ""
-        self.objectName = objectName
+        self.startIndex = startIndex
         self.dataString = ""
         self.formatedData = {}
+        self.objectCount = ''
 
     def isDataValid(self, data):
         if self.spectrum == "" or self.spectrum == "Empty Spectrum":
@@ -92,7 +93,7 @@ class PASParsedObject:
     def modifyData(self, fieldName, newValue, indexInArray=0):
         """modifies the field "fieldName" in "data" and gives it the value "newValue" """
         if fieldName not in self.formatedData:
-            raise KeyError("Cannot modify field {0} in object {1}: it does not exist".format(fieldName, self.objectName))
+            raise KeyError("Cannot modify field {0} in object {1}: it does not exist".format(fieldName, self.startIndex))
         else:
             newValue = newValue.upper()
             if re.match(r'^([0-9]|[A-F])+$', newValue) is None:
@@ -151,7 +152,7 @@ class PASParsedObject:
         This function returns a dict object as follows:
         {'sub0' : 07,'u8IndexBoard' : 01, etc...}
         """
-        print_debug("Reading object {0} with data {1}".format(self.objectName, data), DEBUG_DATA_READING)
+        print_debug("Reading object {0} with data {1}".format(self.startIndex, data), DEBUG_DATA_READING)
         self.formatedData = {}
         data = data.replace(' ','')
         for field in self.fields:
@@ -183,7 +184,7 @@ class PASParsedObject:
         spectrum :     AA BB CCCC DDDD EEEE FF 00 GGGGGGGGGGGGGGGGGGGG HHHH
         data      :    07 01 5B6C 0000 0000 00 00 00000000000000000001 0000
         """
-        description = "Object: {0}\n".format(self.objectName)
+        description = "Object: {0}\n".format(self.startIndex)
         for index in self.fields:
             if index.arraySize == 1:
                 description += "{0}\t\t: Type: {1} at position {2} to {3} size {4}\n"\
@@ -210,7 +211,7 @@ class PASParsedObject:
     def addField(self, nameOfField, typeName, start_pos, size, arraySize):
         """ adds a field in this parsed object """
         parsedType = PASParsedTypeInObject()
-        parsedType.setInfos(self.objectName, nameOfField, typeName, start_pos, size, arraySize, self)
+        parsedType.setInfos(self.startIndex, nameOfField, typeName, start_pos, size, arraySize, self)
         self.fields.append(parsedType)
 
     def nbFields(self):

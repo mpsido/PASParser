@@ -91,9 +91,16 @@ class Test_PASObjReader(unittest.TestCase):
         self.assertEqual( self.objReader.parseObject("11001")
         , "AA BBBBBBBB 00 CCCC DDDD")
 
+        self.assertEqual(self.objReader['11001'].objectCount, 1)
+        self.assertEqual(self.objReader['11001'].objectName, 'tDDS_Version_t')
+
     def test_74000(self):
         self.assertEqual( self.objReader.parseObject("74000")
         , "AA 00 BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB CCCCCCCCCCCCCCCCCCCC")
+
+
+        self.assertEqual(self.objReader['74000'].objectCount, 1)
+        self.assertEqual(self.objReader['74000'].objectName, 'tDDS_ELITE_MPE_t')
 
 
         self.assertEqual(self.objReader["74000"][0].range_, (0,0))
@@ -113,6 +120,10 @@ class Test_PASObjReader(unittest.TestCase):
         self.assertEqual( self.objReader.parseObject("71B00")
             , "AA BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB BB")
 
+
+        self.assertEqual(self.objReader['71B00'].objectCount, 500)
+        self.assertEqual(self.objReader['71B00'].objectName, 'tDDS_T_NET_Device_Def_Block_List_t')
+
         self.assertEqual(self.objReader["71B00"][0].range_, (0,0))
 
         self.assertEqual(self.objReader["71B00"][1].arraySize, 255)
@@ -124,6 +135,10 @@ class Test_PASObjReader(unittest.TestCase):
     def test_30092(self):
         self.assertEqual( self.objReader.parseObject("30092")
             , "AA BB CCCC DDDD EEEE FF 00 GGGGGGGGGGGGGGGGGGGG HHHH")
+
+
+        self.assertEqual(self.objReader['30092'].objectCount, 13)
+        self.assertEqual(self.objReader['30092'].objectName, 'tDDS_SlotInfoM4EVAC_t')
 
         self.assertEqual(self.objReader["30092"][0].range_, (0,0))
         self.assertEqual(self.objReader["30092"][1].range_, (1,1))
@@ -140,6 +155,10 @@ class Test_PASObjReader(unittest.TestCase):
 
         data_10000 = "1B 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 00 03 000000 0B01010A 010110 000000 000000 000000 000000 000000"
         self.objReader["10000"].readData(data_10000)
+
+
+        self.assertEqual(self.objReader['10000'].objectCount, 1)
+        self.assertEqual(self.objReader['10000'].objectName, 'tDDS_EqInfo_t')
 
         data_10000_modified = self.objReader["10000"].modifyData("xEAES_Used", "15")
         self.assertEqual(data_10000_modified, "1B 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 15 03 000000 0B01010A 010110 000000 000000 000000 000000 000000")
