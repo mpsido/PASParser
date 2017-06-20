@@ -46,7 +46,7 @@ class SidePanelProxyModel(QSortFilterProxyModel):
 
     def data(self, index, role):
         if role != Qt.DisplayRole:
-            return super(SidePanelProxyModel, self).data(index, role)
+            return self.sourceModel().data(self.sourceModel().index(index.row(), index.column(), self.currentNodeIndex), role)
 
         sourceIndex = self.mapToSource(index)
         if hasattr(self, 'currentNode'):

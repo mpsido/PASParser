@@ -25,6 +25,8 @@ class PASObjectNode(object):
 
         self.setParent(parent)
 
+        self.nodeUpdated = False
+
     def setParent(self, parent):
         if parent != None:
             self.parent = parent

@@ -23,11 +23,8 @@ class PASParserTreeModel(QAbstractItemModel):
 
     def __init__(self, parent=None):
         super(PASParserTreeModel, self).__init__(parent)
-
         self.treeView = parent
-
         self.headers = [tr('Start index'), tr('Range'),tr('Size'), tr('Nb elements'), tr('Value')]
-
         self.nbColumns = 5
 
         # Create root item
@@ -83,11 +80,23 @@ class PASParserTreeModel(QAbstractItemModel):
         if role == Qt.EditRole:
             node = self.nodeFromIndex(index)
             if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
+                dataBefore = node.pasTypeOrObject.value
                 node.pasTypeOrObject.value = str(value.toString())
+                if node.pasTypeOrObject.value != dataBefore:
+                    while node.parent is not None:
+                        node.nodeUpdated = True
+                        node = node.parent
                 success = True
             elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:
-                node.pasTypeOrObject[node.parent.rowOfChild(node)] = str(value.toString())
+                row = node.parent.rowOfChild(node)
+                dataBefore = node.pasTypeOrObject[row]
+                node.pasTypeOrObject[row] = str(value.toString())
+                if node.pasTypeOrObject[row] != dataBefore:
+                    while node.parent is not None:
+                        node.nodeUpdated = True
+                        node = node.parent
                 success = True
+
         if (success):
             self.dataChanged.emit(index, index)
         return success
@@ -98,6 +107,15 @@ class PASParserTreeModel(QAbstractItemModel):
 
         if role == Qt.TextAlignmentRole:
             return QVariant(int(Qt.AlignTop | Qt.AlignLeft))
+
+        if role == Qt.FontRole:
+            node = self.nodeFromIndex(index)
+            if node.nodeUpdated == True:
+                font = QFont()
+                font.setBold(True)
+                return font
+            else:
+                return QVariant()
 
         if role != Qt.DisplayRole:
             return QVariant()
