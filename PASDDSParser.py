@@ -49,7 +49,7 @@ class INIBlock:
         self.iniOptionsNames.append(optionName)
         self.iniOptionsValues.append(value)
 
-class PASDDSParser:
+class PASDDSObjectParser:
     def __init__(self):
         self.filePath = ""
         self.fileName = ""
@@ -148,3 +148,23 @@ class PASDDSParser:
             self.iniBlocks.append(iniBlock)
 
 
+class PASDDSParser:
+    def __init__(self):
+        self.parsedObjects = {}
+
+    def parse(self,  path, objectId):
+        if objectId in self.parsedObjects:
+            self.parsedObjects[objectId].parse(path, objectId)
+        else:
+            self.parsedObjects[objectId] = PASDDSObjectParser()
+            self.parsedObjects[objectId].parse(path, objectId)
+
+    def getData(self, objectId):
+        return self.parsedObjects[objectId].getData()
+
+    def setData(self, objectId, data):
+        return self.parsedObjects[objectId].setData(data)
+
+    def write(self):
+        for objectId,parsedObject in self.parsedObjects.items():
+            parsedObject.write()

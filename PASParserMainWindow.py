@@ -28,7 +28,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.proxyModel = {}
         self.treeView = {}
 
-        self.ddsParser = PASDDSParser()
+        self.ddsParser = {}
         self.objReader = PASObjReader()
 
         #temporary code for tests:
@@ -90,8 +90,9 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         model = self.model[path]
         node = model.nodeFromIndex(index)
         if model.rowCount(index) == 0 and model.isChildOfRoot(index):
-            self.ddsParser.parse(path, node.id)
-            data = self.ddsParser.getData()
+            self.ddsParser[path+"/"+node.id] = PASDDSParser()
+            self.ddsParser[path+"/"+node.id].parse(path, node.id)
+            data = self.ddsParser[path+"/"+node.id].getData(node.id)
             node.rangeOrObjectName = self.objReader[node.id].objectName
             self.objReader[node.id].readData(data)
             node.pasTypeOrObject = self.objReader[node.id]
@@ -123,11 +124,9 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         node = self.model[path].nodeFromIndex(index)
         id = node.pasTypeOrObject.startIndex
-        self.ddsParser.parse(path, id) #TODO c'est pas top de reparser à chaque fois... avoir un object par parseur ?
         data = self.objReader[id].dataString
         if self.objReader[id].isDataValid(data):
-            self.ddsParser.setData(data)
-            self.ddsParser.write() #TODO demander confirmation à l'utilisateur pour faire un enregistrement
+            self.ddsParser[path+"/"+id].setData(id, data)
 
     @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex) # signal with arguments
     def repaintViews(self, index, indexEnd):
@@ -138,6 +137,9 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
 
     def closeEvent(self, event):
+        for path,ddsParser in self.ddsParser.items():
+            ddsParser.write()
+        print ddsParser
         print("Bye bye")
 
     def main(self):

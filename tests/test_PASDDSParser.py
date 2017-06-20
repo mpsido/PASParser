@@ -15,7 +15,7 @@ from PASObjReader import *
 
 class Test_PASDDSParser(unittest.TestCase):
     def setUp(self):
-        self.ddsParser = PASDDSParser()
+        self.ddsParser = PASDDSObjectParser()
         self.objReader = PASObjReader()
 
     def test_readFile(self):
