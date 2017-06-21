@@ -88,7 +88,10 @@ class PASObjReader:
                 parsedObject = PASParsedObject(objectId)
                 parsedObject.groupName = self._PASObjXMLDict[objectId].getparent().get('name')
                 parsedObject.objectName = self._PASObjXMLDict[objectId].get('name')
-                parsedObject.objectCount = int(self._PASObjXMLDict[objectId].find('count').get('value'))
+                if self._PASObjXMLDict[objectId].find('count') is not None:
+                    parsedObject.objectCount = int(self._PASObjXMLDict[objectId].find('count').get('value'))
+                else:
+                    parsedObject.objectCount = 1
                 for typeNode in self._PASObjXMLDict[objectId].findall('subindex'): #<subindex name="" type="type_0230" version="03150000">
                     nameOfField = typeNode.get('name')
                     typeName = typeNode.get('type')

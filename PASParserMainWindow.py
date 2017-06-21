@@ -27,6 +27,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.sidePanelModel = {}
         self.proxyModel = {}
         self.treeView = {}
+        self.hasModifToSave = {}
 
         self.ddsParser = {}
         self.objReader = PASObjReader()
@@ -132,6 +133,8 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         data = self.objReader[id].dataString
         if self.objReader[id].isDataValid(data):
             self.ddsParser[path+"/"+id].setData(id, data)
+            if node.nodeUpdated:
+                self.hasModifToSave[path] = True
 
     @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex) # signal with arguments
     def repaintViews(self, index, indexEnd):
@@ -165,8 +168,12 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         logging.debug("Remove {0}".format(self.actionNode.id))
 
     def closeEvent(self, event):
-        for path,ddsParser in self.ddsParser.items():
-            ddsParser.write()
+        path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
+        if path in self.hasModifToSave and self.hasModifToSave[path]:
+            bSave = QMessageBox.question(self, tr("Save"), tr("Do you want to save data before leaving ?"), QMessageBox.Yes | QMessageBox.No)
+            if bSave == QMessageBox.Yes:
+                for path,ddsParser in self.ddsParser.items():
+                    ddsParser.write()
         print("Bye bye")
 
     def main(self):
