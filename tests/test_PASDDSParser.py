@@ -49,9 +49,6 @@ class Test_PASDDSParser(unittest.TestCase):
         self.objReader["74000"].readData(data_74000)
         data_74000_modified = self.objReader["74000"].modifyData("sub0", "04")
 
-
-#        self.assertEqual(self.ddsParser['PAS_SDO_SEND_DIRECT']['OPT'], "0004")
-
         self.ddsParser.setData(data_74000_modified)
 
         data_74000 = self.ddsParser.getData()
@@ -91,6 +88,79 @@ class Test_PASDDSParser(unittest.TestCase):
         data_74000 = self.ddsParser.getData()
         self.assertEqual(data_74000,
             '02 00 606D0C006054D052584D50463863580260096400D00764006400F40101010104 00A41011301068ABE000')
+
+
+    def tests_data20000_manyIds(self):
+        self.ddsParser.parse("tests/files","20000")
+        self.assertEqual(self.ddsParser.nbDataId(), 5)
+
+        data_0 = self.ddsParser.getData()
+        self.assertEqual(data_0, "0D 03 0000 40 00 0000 0000 0000 00 00 00 00 0000 0000")
+
+        data_1 = self.ddsParser.getData(1)
+        self.assertEqual(data_1, "0D 03 0100 40 00 0000 0000 0000 02 00 00 00 0000 0000")
+
+        data_2 = self.ddsParser.getData(2)
+        self.assertEqual(data_2, "0D 00 0200 48 00 0000 2C01 0000 00 00 00 00 0000 0000")
+
+        data_3 = self.ddsParser.getData(3)
+        self.assertEqual(data_3, "0D 00 0300 48 00 0000 2C01 0000 00 00 00 00 0000 0000")
+
+        data_4 = self.ddsParser.getData(4)
+        self.assertEqual(data_4, "0D 06 0400 48 00 0000 0000 0000 08 00 00 00 0000 0000")
+
+        with self.assertRaises(IndexError) as exception:
+            data_5 = self.ddsParser.getData(5)
+
+        data_added = "MOUHAHAH"
+        self.ddsParser.insertDataId(data_added, 2)
+
+        self.assertEqual(self.ddsParser.nbDataId(), 6)
+
+        data_0 = self.ddsParser.getData(0)
+        self.assertEqual(data_0, "0D 03 0000 40 00 0000 0000 0000 00 00 00 00 0000 0000")
+
+        data_1 = self.ddsParser.getData(1)
+        self.assertEqual(data_1, "0D 03 0100 40 00 0000 0000 0000 02 00 00 00 0000 0000")
+
+        data_2 = self.ddsParser.getData(2)
+        self.assertEqual(data_2, "MOUHAHAH")
+
+        data_3 = self.ddsParser.getData(3)
+        self.assertEqual(data_3, "0D 00 0200 48 00 0000 2C01 0000 00 00 00 00 0000 0000")
+
+        data_4 = self.ddsParser.getData(4)
+        self.assertEqual(data_4, "0D 00 0300 48 00 0000 2C01 0000 00 00 00 00 0000 0000")
+
+        data_5 = self.ddsParser.getData(5)
+        self.assertEqual(data_5, "0D 06 0400 48 00 0000 0000 0000 08 00 00 00 0000 0000")
+
+
+        with self.assertRaises(IndexError) as exception:
+            self.ddsParser.getData(6)
+
+        self.ddsParser.removeDataId(0)
+        self.assertEqual(self.ddsParser.nbDataId(), 5)
+
+
+        data_0 = self.ddsParser.getData(0)
+        self.assertEqual(data_0, "0D 03 0100 40 00 0000 0000 0000 02 00 00 00 0000 0000")
+
+        data_1 = self.ddsParser.getData(1)
+        self.assertEqual(data_1, "MOUHAHAH")
+
+        data_2 = self.ddsParser.getData(2)
+        self.assertEqual(data_2, "0D 00 0200 48 00 0000 2C01 0000 00 00 00 00 0000 0000")
+
+        data_3 = self.ddsParser.getData(3)
+        self.assertEqual(data_3, "0D 00 0300 48 00 0000 2C01 0000 00 00 00 00 0000 0000")
+
+        data_4 = self.ddsParser.getData(4)
+        self.assertEqual(data_4, "0D 06 0400 48 00 0000 0000 0000 08 00 00 00 0000 0000")
+
+
+        with self.assertRaises(IndexError) as exception:
+            self.ddsParser.getData(5)
 
 
 
