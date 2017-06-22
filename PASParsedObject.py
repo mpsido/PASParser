@@ -18,11 +18,11 @@ set_debug_flags(8)
 class PASParsedObject:
     """This class is a container for PASParsedTypeInObject objects, it constructs them and store them"""
 
-    def __init__(self, startIndex):
+    def __init__(self, objectIndex):
         self.fields = [] #list of PASParsedTypeInObject
         self.spectrum = ""
         self.groupName = ""
-        self.startIndex = startIndex
+        self.objectIndex = objectIndex
         self.dataString = ""
         self.formatedData = {}
         self.objectCount = ''
@@ -93,7 +93,7 @@ class PASParsedObject:
     def modifyData(self, fieldName, newValue, indexInArray=0):
         """modifies the field "fieldName" in "data" and gives it the value "newValue" """
         if fieldName not in self.formatedData:
-            raise KeyError("Cannot modify field {0} in object {1}: it does not exist".format(fieldName, self.startIndex))
+            raise KeyError("Cannot modify field {0} in object {1}: it does not exist".format(fieldName, self.objectIndex))
         else:
             newValue = newValue.upper()
             if re.match(r'^([0-9]|[A-F])+$', newValue) is None:
@@ -152,8 +152,13 @@ class PASParsedObject:
         This function returns a dict object as follows:
         {'sub0' : 07,'u8IndexBoard' : 01, etc...}
         """
-        print_debug("Reading object {0} with data {1}".format(self.startIndex, data), DEBUG_DATA_READING)
+        print_debug("Reading object {0} with data {1}".format(self.objectIndex, data), DEBUG_DATA_READING)
         self.formatedData = {}
+        self.dataString = ""
+
+        if self.isDataValid(data) == False:
+            raise PASParsingException("DATA={0}\nNot valid for index {1}".format(data, self.objectIndex))
+
         data = data.replace(' ','')
         for field in self.fields:
             if field.arraySize == 1:
@@ -166,6 +171,7 @@ class PASParsedObject:
                     arrayContent.append(data[2*field.range_[i][0]:2*(field.range_[i][1]+1)])
                     print_debug("{0}[{1}]\t\t = {2}".format(field.nameOfField, i, arrayContent[i]), DEBUG_DATA_READING)
                 self.formatedData[field.nameOfField] = arrayContent
+        self.dataString = self.writeFormatedData(self.formatedData)
         return self.formatedData
 
     def __repr__(self):
@@ -184,7 +190,7 @@ class PASParsedObject:
         spectrum :     AA BB CCCC DDDD EEEE FF 00 GGGGGGGGGGGGGGGGGGGG HHHH
         data      :    07 01 5B6C 0000 0000 00 00 00000000000000000001 0000
         """
-        description = "Object: {0}\n".format(self.startIndex)
+        description = "Object: {0}\n".format(self.objectIndex)
         for index in self.fields:
             if index.arraySize == 1:
                 description += "{0}\t\t: Type: {1} at position {2} to {3} size {4}\n"\
@@ -209,9 +215,9 @@ class PASParsedObject:
         return dataField
 
     def addField(self, nameOfField, typeName, start_pos, size, arraySize):
-        """ adds a field in this parsed object """
+        """Adds a field in this parsed object """
         parsedType = PASParsedTypeInObject()
-        parsedType.setInfos(self.startIndex, nameOfField, typeName, start_pos, size, arraySize, self)
+        parsedType.setInfos(self.objectIndex, nameOfField, typeName, start_pos, size, arraySize, self)
         self.fields.append(parsedType)
 
     def nbFields(self):

@@ -319,4 +319,85 @@ class Test_PASObjReader(unittest.TestCase):
         self.assertFalse(self.objReader["74000"].isDataValid("02 00 06D0C006054D052584D50463863580260096400D00764003200640001010104 500A41011301068ABE000"))
 
 
+    def test_addIndexes(self):
+        self.objReader.parseObject("20000")
+
+        with self.assertRaises(PASParsingException) as exception:
+            self.objReader.addIndexToObject("20001", "212165")
+            self.assertEqual(exception.message == "PASObjReader.addIndexToObject : start index 212165 do not exist")
+
+        with self.assertRaises(PASParsingException) as exception:
+            self.objReader.addIndexToObject("20000", "20000")
+            self.assertEqual(exception.message == "PASObjReader.addIndexToObject : index 20000 already exists")
+
+
+        with self.assertRaises(PASParsingException) as exception:
+            self.objReader.addIndexToObject("22048", "20000")
+            self.assertEqual(exception.message == "Invalid objectIndex : 22048 for object at start_index=20000 : count = 2048)")
+
+        with self.assertRaises(PASParsingException) as exception:
+            self.objReader.addIndexToObject("19000", "20000")
+            self.assertEqual(exception.message == "Invalid objectIndex : 19000 for object at start_index=20000 : count = 2048)")
+
+        self.objReader.addIndexToObject("20004", "20000")
+
+        self.assertEqual(self.objReader["20004"].spectrum, "AA BB CCCC DD EE FFFF GGGG HHHH II JJ KK LL MMMM NNNN")
+        self.assertEqual(self.objReader["20000"].spectrum, "AA BB CCCC DD EE FFFF GGGG HHHH II JJ KK LL MMMM NNNN")
+
+        with self.assertRaises(KeyError) as exception:
+            self.objReader["20002"]
+
+        with self.assertRaises(KeyError) as exception:
+            self.objReader["20005"]
+
+
+        data_20000 = "0D 06 0400 48 00 0000 0000 0000 08 00 00 00 0000 0000"
+
+        self.objReader["20004"].readData(data_20000)
+
+        self.assertEqual(self.objReader["20004"].dataString, data_20000)
+        self.assertEqual(self.objReader["20000"].dataString, "")
+
+        with self.assertRaises(IndexError) as exception:
+            self.objReader["20004"]["sub4"]
+
+        with self.assertRaises(KeyError) as exception:
+            self.objReader["20004"]["sub4"] = "AA"
+            self.assertEqual(exception.message, "Cannot modify field sub4 in object {1}: it does not exist")
+
+        self.objReader["20004"]["sub0"] = "AA"
+        self.assertEqual(self.objReader["20004"].dataString, "AA 06 0400 48 00 0000 0000 0000 08 00 00 00 0000 0000")
+
+        self.objReader["20004"]["eCommandParam"] = "EE"
+        self.assertEqual(self.objReader["20004"].dataString, "AA 06 0400 48 00 0000 0000 0000 08 EE 00 00 0000 0000")
+        self.assertEqual(self.objReader["20000"].dataString, "")
+
+
+
+    def test_removeIndexes(self):
+        self.objReader.parseObject("20000")
+
+        self.objReader.removeIndexAt("20000") #the source index should not be removed
+        self.objReader["20000"]
+
+        self.objReader.addIndexToObject("20004", "20000")
+
+        with self.assertRaises(KeyError) as exception:
+            self.objReader.removeIndexAt("20001")
+            self.assertEqual(exception.message, "PASObjReader.removeIndexAt : ObjectIndex 20001 do not exist, cannot remove it")
+
+        self.objReader.removeIndexAt("20004")
+
+
+        with self.assertRaises(KeyError) as exception:
+            self.objReader["20004"]
+
+        #test the following do not raise execption
+        self.objReader["20000"]
+        self.objReader.removeIndexAt("20000") #the source index should not be removed
+        self.objReader["20000"]
+
+
+
+
 unittest.main()

@@ -30,6 +30,7 @@ class INIBlock:
         self.iniOptionsValues = []
 
     def __repr__(self):
+        """Constructs the INI block as a text"""
         description = self.name + "\n"
         for option,value in self.iterate():
             description += option + "=" + value + "\n"
@@ -64,6 +65,8 @@ class PASDDSObjectParser:
         self.objReader = PASObjReader()
 
     def __iter__(self):
+        """Initializes iteration, this object iterates iniBlocks"""
+        # iterates self.iniBlocks (type INIBlock)
         self.bIterating = True
         self.currentBlock = self.firstBlock
         print_debug("Init: {0}".format(self.currentBlock.name), ENUM_DEBUG_OPT_PARSING)
@@ -85,6 +88,7 @@ class PASDDSObjectParser:
         return currentBlock
 
     def __repr__(self):
+        """Constructs the full file text content"""
         description = ""
         for iniBlock in self:
             description += str(iniBlock)
@@ -119,9 +123,9 @@ class PASDDSObjectParser:
             self.fileTextContent = file.read()
             file.close()
 
-        self.parseBlocks()
+        self._parseBlocks()
 
-        self.parseValues()
+        self._parseValues()
 
     def write(self):
         with open(self.filePath, 'w') as file:
@@ -129,6 +133,8 @@ class PASDDSObjectParser:
             file.close()
 
     def sections(self):
+        """Returns the names of the sections in the parsed file in a string list.
+        Example: [[SECTION_NAME],[SECOND_SECTION]] """
         return self.iniBlockNames
 
     def __getitem__(self,blockName):
@@ -139,11 +145,11 @@ class PASDDSObjectParser:
         return self.PAS_OD_WRITE_Blocks[offset]['DATA']
 
     def nbDataId(self):
-        """ returns the number of PAS_OD_WRITE block in the file """
+        """Returns the number of [PAS_OD_WRITE] blocks in the file """
         return len(self.PAS_OD_WRITE_Blocks)
 
     def removeDataId(self, offset):
-        """ Removes the PAS_OD_WRITE block located at position offset
+        """Removes the PAS_OD_WRITE block located at position offset
         raises IndexError if offset is invalid """
         blockToRemove =  self.PAS_OD_WRITE_Blocks.pop(offset) #raises IndexError if offset is invalid
         if offset > 0 and hasattr(blockToRemove, 'nextBlock'):
@@ -153,7 +159,7 @@ class PASDDSObjectParser:
 
 
     def insertDataId(self, newValue, offset = 0):
-        """ Adds a PAS_OD_WRITE block in the file
+        """Adds a PAS_OD_WRITE block in the file
         Setting the data value of the new created block to 'newValue',
         the new block is insered BEFORE the block at 'offset' and its content (exept data) is a copy of the block at 'offset'"""
         iniBlock = INIBlock()
@@ -176,7 +182,7 @@ class PASDDSObjectParser:
             raise PASDDSFileReadingException("Data is invalid :\nDATA     = {0}\nSPECTRUM = {1}".format(newValue, self.objReader[self.fileName].spectrum))
 
 
-    def parseBlocks(self):
+    def _parseBlocks(self):
         blocksSeparator = re.compile("^\s*\[.*\](?:\s*)$", flags = re.MULTILINE)
         self.iniBlockNames = [blockName.lstrip().rstrip() for blockName in blocksSeparator.findall(self.fileTextContent)]
 
@@ -184,7 +190,7 @@ class PASDDSObjectParser:
         if self.iniBlockTexts[0].lstrip() == '':
             self.iniBlockTexts.pop(0)
 
-    def parseValues(self):
+    def _parseValues(self):
         firstBlock = True
         for i,block in enumerate(self.iniBlockTexts):
             print_debug("\nAt {0}, block \n{1}".format(i, block), ENUM_DEBUG_OPT_PARSING)
@@ -232,8 +238,8 @@ class PASDDSParser:
             self.parsedObjects[objectId] = PASDDSObjectParser()
             self.parsedObjects[objectId].parse(path, objectId)
 
-    def getData(self, objectId):
-        return self.parsedObjects[objectId].getData()
+    def getData(self, objectId, offset = 0):
+        return self.parsedObjects[objectId].getData(offset)
 
     def setData(self, objectId, data):
         return self.parsedObjects[objectId].setData(data)

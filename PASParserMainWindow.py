@@ -129,7 +129,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         """Writes updated data in PAS DDS file """
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         node = self.model[path].nodeFromIndex(index)
-        id = node.pasTypeOrObject.startIndex
+        id = node.pasTypeOrObject.objectIndex
         data = self.objReader[id].dataString
         if self.objReader[id].isDataValid(data):
             self.ddsParser[path+"/"+id].setData(id, data)
@@ -168,6 +168,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         logging.debug("Remove {0}".format(self.actionNode.id))
 
     def closeEvent(self, event):
+        #TODO this will only save current tab, create a save event for each tab closing event
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         if path in self.hasModifToSave and self.hasModifToSave[path]:
             bSave = QMessageBox.question(self, tr("Save"), tr("Do you want to save data before leaving ?"), QMessageBox.Yes | QMessageBox.No)

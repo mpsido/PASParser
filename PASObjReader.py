@@ -19,7 +19,7 @@ DEBUG_FLAG_RANGES = 2
 
 
 class PASObjReader:
-    """This classes parses OD.xml file to prepare object parsing
+    """This class parses OD.xml file to prepare object parsing
     Objects are parsed through function "parseObject"
     """
     def __init__(self, xmlFilePath = ""):
@@ -63,10 +63,88 @@ class PASObjReader:
         self.parseObject(objectId)
         return self._parsedObjects[objectId]
 
+    def removeIndexAt(self, objectIndex):
+        if objectIndex in self._parsedObjects:
+            if objectIndex != self._parsedObjects[objectIndex].startIndex: #do not delete startIndex object
+                del self._parsedObjects[objectIndex]
+        else:
+            raise KeyError("PASObjReader.removeIndexAt : ObjectIndex {0} do not exist, cannot remove it".format(objectIndex))
+
+    def addIndexToObject(self, objectIndex, startIndex):
+        """
+        Creates a new object with index 'objectIndex' using the PASParsedObject whose objectIndex is 'startIndex'
+        """
+        if startIndex not in self._parsedObjects:
+            raise PASParsingException("PASObjReader.addIndexToObject : start index {0} do not exist".format(startIndex))
+
+        count = int(self._parsedObjects[startIndex].objectCount)
+        offset = int(objectIndex, 16) - int(self._parsedObjects[startIndex].objectIndex, 16)
+        if offset >= count or offset < 0:
+            raise PASParsingException("Invalid objectIndex : {0} for object at start_index={1} : count = {2})".format(objectIndex, startIndex, count))
+
+        if objectIndex in self._parsedObjects:
+            raise PASParsingException("PASObjReader.addIndexToObject : index {0} already exists".format(startIndex))
+
+        self._parsedObjects[objectIndex] = PASObjReader._xmlParseObject(self._PASObjXMLDict[startIndex], self.typeReader, objectIndex)
+        self._parsedObjects[objectIndex].startIndex = startIndex
+
+
+    def _xmlParseObject(xmlNode, typeReader, objectId):
+        """
+        Parses 'xmlNode' in order to construct a PASParsedObject object
+        The created PASParsedObject object's objectId given will be 'objectId'
+        returns the constructed PASParsedObject object
+        """
+        letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        spectrum = ""
+        l = 0
+        byteNumber = 0
+        parsedObject = PASParsedObject(objectId)
+        parsedObject.groupName = xmlNode.getparent().get('name')
+        parsedObject.objectName = xmlNode.get('name')
+        if xmlNode.find('count') is not None:
+            parsedObject.objectCount = int(xmlNode.find('count').get('value'))
+        else:
+            parsedObject.objectCount = 1
+        for typeNode in xmlNode.findall('subindex'): #<subindex name="" type="type_0230" version="03150000">
+            nameOfField = typeNode.get('name')
+            typeName = typeNode.get('type')
+            count = int(typeNode.get('count')) #longueur du tableau
+            pasType = typeReader.PASTypesDict[typeName]
+            print_debug("DATA {4}:Type {0} size {1} count {2} padding {3}"
+                .format(typeName, pasType.size, count, pasType.padding, letters[l]), DEBUG_FLAG_PADDING)
+            padding = PASObjReader.calculatePadding(byteNumber, pasType.padding)
+
+            #add padding
+            for j in range (0, padding):
+                spectrum += "00"
+            if (padding > 0):
+                byteNumber += padding
+                spectrum += " "
+
+            #fill in parsed object with the type we are currently parsing
+            parsedObject.addField(nameOfField, typeName, byteNumber, pasType.size, count)
+
+            while count > 0:
+                spectrum += pasType.spectrum.replace('X', letters[l])
+                # for i in range(0, pasType.size):
+                #     spectrum += letters[l] + letters[l]
+                count -= 1
+                spectrum += " "
+                byteNumber += pasType.size
+            l += 1
+        if spectrum.endswith(' '):
+            spectrum = spectrum[:-1]
+        parsedObject.spectrum = spectrum
+
+        return parsedObject
+
+    _xmlParseObject = staticmethod(_xmlParseObject)
+
 
     def parseObject(self, objectId):
         """
-        Parse the object whose "start_index" is objectId
+        Parses the object whose "start_index" is objectId
         constructs an arborescence of the types contained in this object
         Uses the data in self.self.typeReader to calculate the position of each typed field in the final DATA representing this object
 
@@ -81,48 +159,9 @@ class PASObjReader:
         objectId = objectId.lower()
         if objectId not in self._parsedObjects:
             if objectId in self._PASObjXMLDict:
-                letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-                spectrum = ""
-                l = 0
-                byteNumber = 0
-                parsedObject = PASParsedObject(objectId)
-                parsedObject.groupName = self._PASObjXMLDict[objectId].getparent().get('name')
-                parsedObject.objectName = self._PASObjXMLDict[objectId].get('name')
-                if self._PASObjXMLDict[objectId].find('count') is not None:
-                    parsedObject.objectCount = int(self._PASObjXMLDict[objectId].find('count').get('value'))
-                else:
-                    parsedObject.objectCount = 1
-                for typeNode in self._PASObjXMLDict[objectId].findall('subindex'): #<subindex name="" type="type_0230" version="03150000">
-                    nameOfField = typeNode.get('name')
-                    typeName = typeNode.get('type')
-                    count = int(typeNode.get('count')) #longueur du tableau
-                    pasType = self.typeReader.PASTypesDict[typeName]
-                    print_debug("DATA {4}:Type {0} size {1} count {2} padding {3}"
-                        .format(typeName, pasType.size, count, pasType.padding, letters[l]), DEBUG_FLAG_PADDING)
-                    padding = PASObjReader.calculatePadding(byteNumber, pasType.padding)
-
-                    #add padding
-                    for j in range (0, padding):
-                        spectrum += "00"
-                    if (padding > 0):
-                        byteNumber += padding
-                        spectrum += " "
-
-                    #fill in parsed object with the type we are currently parsing
-                    parsedObject.addField(nameOfField, typeName, byteNumber, pasType.size, count)
-
-                    while count > 0:
-                        spectrum += pasType.spectrum.replace('X', letters[l])
-                        # for i in range(0, pasType.size):
-                        #     spectrum += letters[l] + letters[l]
-                        count -= 1
-                        spectrum += " "
-                        byteNumber += pasType.size
-                    l += 1
-                if spectrum.endswith(' '):
-                    spectrum = spectrum[:-1]
-                parsedObject.spectrum = spectrum
-                self._parsedObjects[objectId] = parsedObject
+                self._parsedObjects[objectId] = PASObjReader._xmlParseObject(self._PASObjXMLDict[objectId], self.typeReader, objectId)
+                self._parsedObjects[objectId].startIndex = objectId
+                spectrum = self._parsedObjects[objectId].spectrum
             else:
                 spectrum = "Non existing object"
         else:
