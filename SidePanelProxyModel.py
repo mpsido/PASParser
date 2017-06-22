@@ -16,8 +16,6 @@ class SidePanelProxyModel(QSortFilterProxyModel):
         self.nbColumns = 2
         self.headers = [tr('Name'), tr('Value')]
 
-
-
     def rowCount(self, parent = QModelIndex()):
         if hasattr(self, 'currentNode'):
             return len(self.currentNode)
@@ -30,7 +28,6 @@ class SidePanelProxyModel(QSortFilterProxyModel):
             self.currentNodeIndex = index
             self.currentNode = node
             self.layoutChanged.emit()
-
 
 
     def setData(self, index, value, role = Qt.EditRole):

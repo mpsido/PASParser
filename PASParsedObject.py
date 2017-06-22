@@ -157,7 +157,7 @@ class PASParsedObject:
         self.dataString = ""
 
         if self.isDataValid(data) == False:
-            raise PASParsingException("DATA={0}\nNot valid for index {1}".format(data, self.objectIndex))
+            print("WARNING:\nDATA={0}\nNot valid for index {1}".format(data, self.objectIndex))
 
         data = data.replace(' ','')
         for field in self.fields:

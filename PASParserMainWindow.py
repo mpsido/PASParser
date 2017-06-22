@@ -22,6 +22,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
     def __init__(self, parent=None):
         super(PASParserMainWindow, self).__init__(parent)
         self.setupUi(self)
+        self.tabWidget.tabCloseRequested.connect(self.closeTab)
         self.pasDir = []
         self.model = {}
         self.sidePanelModel = {}
@@ -30,7 +31,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.hasModifToSave = {}
 
         self.ddsParser = {}
-        self.objReader = PASObjReader()
+        self.objReader = {}
 
         #temporary code for tests:
         cur_dir = os.path.dirname(os.path.realpath(__file__))
@@ -50,8 +51,13 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
             print("{0}: folder already open".format(fullPath))
             return
 
+        if os.path.isdir(fullPath) == False:
+            return
+
         self.pasDir.append(fullPath)
         shortPath = re.split(r'[/\\]', fullPath)[-1]
+
+        self.objReader[fullPath] = PASObjReader()
 
         model = PASParserTreeModel(self)
         model.dataChanged.connect(self.repaintViews)
@@ -98,23 +104,23 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
             self.ddsParser[path+"/"+node.id] = PASDDSParser()
             self.ddsParser[path+"/"+node.id].parse(path, node.id)
             data = self.ddsParser[path+"/"+node.id].getData(node.id)
-            node.rangeOrObjectName = self.objReader[node.id].objectName
-            self.objReader[node.id].readData(data)
-            node.pasTypeOrObject = self.objReader[node.id]
+            node.rangeOrObjectName = self.objReader[path][node.id].objectName
+            self.objReader[path][node.id].readData(data)
+            node.pasTypeOrObject = self.objReader[path][node.id]
 
-            for j, field in enumerate(self.objReader[node.id].fields):
+            for j, field in enumerate(self.objReader[path][node.id].fields):
                 if field.arraySize == 1:
                     PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0], field.range_[1]),
-                        field.size, field.arraySize, self.objReader[node.id][field.nameOfField], node)
+                        field.size, field.arraySize, self.objReader[path][node.id][field.nameOfField], node)
                 else: #in case of array append each field of the array
                     arrayNode = PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0][0], field.range_[-1][1]),
-                        field.size, field.arraySize, self.objReader[node.id][field.nameOfField], node)
+                        field.size, field.arraySize, self.objReader[path][node.id][field.nameOfField], node)
                     for i in range(0, field.arraySize):
                         PASObjectNode(field.nameOfField + "[{}]".format(i), "byte {0} to {1}".format(field.range_[i][0], field.range_[i][1]),
-                                            field.size, field.arraySize, self.objReader[node.id][field.nameOfField], arrayNode)
+                                            field.size, field.arraySize, self.objReader[path][node.id][field.nameOfField], arrayNode)
                     if model.insertRows(0, field.arraySize, model.index(i, 0, model.index(j, 0, index) )) == False:
                         print("Failed to insert array rows to {0}".format(field.nameOfField))
-            if model.insertRows(0, self.objReader[node.id].nbFields(), index) == False:
+            if model.insertRows(0, self.objReader[path][node.id].nbFields(), index) == False:
                 print("Failed to insert row to {0}".format(model.nodeFromIndex(index).id))
 
         elif node.typeOfNode == ENUM_TYPE_NODE_OBJECT or node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
@@ -130,8 +136,8 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         node = self.model[path].nodeFromIndex(index)
         id = node.pasTypeOrObject.objectIndex
-        data = self.objReader[id].dataString
-        if self.objReader[id].isDataValid(data):
+        data = self.objReader[path][id].dataString
+        if self.objReader[path][id].isDataValid(data):
             self.ddsParser[path+"/"+id].setData(id, data)
             if node.nodeUpdated:
                 self.hasModifToSave[path] = True
@@ -164,29 +170,49 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
     def item_addAction(self):
         logging.debug("Add {0}".format(self.actionNode.id))
+
+
     def item_removeAction(self):
         logging.debug("Remove {0}".format(self.actionNode.id))
 
-    def closeEvent(self, event):
-        #TODO this will only save current tab, create a save event for each tab closing event
-        path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
-        if path in self.hasModifToSave and self.hasModifToSave[path]:
-            bSave = QMessageBox.question(self, tr("Save"), tr("Do you want to save data before leaving ?"), QMessageBox.Yes | QMessageBox.No)
-            if bSave == QMessageBox.Yes:
-                for path,ddsParser in self.ddsParser.items():
-                    ddsParser.write()
-        print("Bye bye")
-
-    def main(self):
-        self.show()
 
     @QtCore.pyqtSlot(QtCore.QString) # signal with arguments
     def on_lineEdit_textChanged(self, qtText):
         """Called when user edits filters"""
         text = str(qtText)
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
-#        self.proxyModel[path].setFilterWildcard(qtText)
+        self.proxyModel[path].setFilterWildcard(qtText)
         self.proxyModel[path].setFilterRegExp(qtText)
+
+    @QtCore.pyqtSlot(int) # signal with arguments
+    def closeTab(self, tabIndex):
+        path = str(self.tabWidget.tabToolTip(tabIndex))
+        if path in self.hasModifToSave and self.hasModifToSave[path]:
+          bSave = QMessageBox.question(self, tr("Save"), tr("Do you want to save data in path {0} before leaving ?").format(path), QMessageBox.Yes | QMessageBox.No)
+          if bSave == QMessageBox.Yes:
+              for path,ddsParser in self.ddsParser.items():
+                  ddsParser.write()
+        self.tabWidget.removeTab(tabIndex)
+        self.clearViews(path)
+
+    def clearViews(self, path):
+        if path in self.pasDir:
+            self.pasDir.remove(path)
+            self.proxyModel.pop(path).deleteLater()
+            self.sidePanelModel.pop(path).deleteLater()
+            self.model.pop(path).deleteLater()
+            self.treeView.pop(path).deleteLater()
+        else:
+            print("Path: {0} not in self.pasDir\n{1}".format(path, self.pasDir))
+
+    def closeEvent(self, event):
+        for i in range(0, self.tabWidget.count()):
+            self.closeTab(0)
+        print("Bye bye")
+
+    def main(self):
+        self.show()
+
 
 
 
