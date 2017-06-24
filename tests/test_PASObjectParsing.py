@@ -10,7 +10,7 @@ sys.path.append(lib_path)
 
 import unittest
 from PASObjReader import *
-from print_debug import *
+#from print_debug import *
 
 
 class Test_PASObjReader(unittest.TestCase):

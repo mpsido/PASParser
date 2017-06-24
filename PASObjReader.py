@@ -12,11 +12,6 @@ from lxml import etree
 from PASParsedObject import *
 from print_debug import *
 
-DEBUG_FLAG_PADDING = 1
-DEBUG_FLAG_RANGES = 2 
-
-# set_debug_flags(0)
-
 
 class PASObjReader:
     """This class parses OD.xml file to prepare object parsing
@@ -74,9 +69,11 @@ class PASObjReader:
         """
         Creates a new object with index 'objectIndex' using the PASParsedObject whose objectIndex is 'startIndex'
         """
+        print_debug("adding index {0} to startIndex {1}".format(objectIndex, startIndex), DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
         if startIndex not in self._parsedObjects:
             raise PASParsingException("PASObjReader.addIndexToObject : start index {0} do not exist".format(startIndex))
 
+        objectIndex = objectIndex.split(' ')[0]
         count = int(self._parsedObjects[startIndex].objectCount)
         offset = int(objectIndex, 16) - int(self._parsedObjects[startIndex].objectIndex, 16)
         if offset >= count or offset < 0:
@@ -104,6 +101,7 @@ class PASObjReader:
         parsedObject.objectName = xmlNode.get('name')
         if xmlNode.find('count') is not None:
             parsedObject.objectCount = int(xmlNode.find('count').get('value'))
+            #TODO certains objets ont leur count défini dans le 'joinGroup'
         else:
             parsedObject.objectCount = 1
         for typeNode in xmlNode.findall('subindex'): #<subindex name="" type="type_0230" version="03150000">

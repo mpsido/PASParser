@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from print_debug import *
 
 ENUM_TYPE_NODE_ROOT = 0
 ENUM_TYPE_NODE_OBJECT = 1
@@ -27,6 +28,9 @@ class PASObjectNode(object):
 
         self.nodeUpdated = False
 
+    def getStartIndex(self):
+        return self.pasTypeOrObject.startIndex
+
     def setParent(self, parent):
         if parent != None:
             self.parent = parent
@@ -38,6 +42,9 @@ class PASObjectNode(object):
         self.children.append(child)
 
     def childAtRow(self, row):
+        if row > len(self.children):
+            print_debug("PASObjectNode.childAtRow : Element: {0} Row: {1} is out of range. Nb Elements: {2}".format(self.id, row, len(self.children)), DEBUG_MMI)
+            return self
         return self.children[row]
 
     def rowOfChild(self, child):

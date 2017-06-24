@@ -4,12 +4,6 @@
 from print_debug import *
 
 
-DEBUG_FLAG_PADDING = 1
-DEBUG_FLAG_RANGES = 2
-DEBUG_DATA_READING = 4
-
-set_debug_flags(0)
-
 class PASParsedTypeInObject(object):
     """Class that represents a type stored inside an object:
     it keeps the indexes where the data is stored inside the object and provides tools the read and write the data"""

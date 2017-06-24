@@ -7,13 +7,6 @@ import re
 
 from PASParsedTypeInObject import *
 
-DEBUG_FLAG_PADDING = 1
-DEBUG_FLAG_RANGES = 2 
-DEBUG_DATA_READING = 4
-DEBUG_DATA_CHECK = 8
-
-set_debug_flags(8)
-
 
 class PASParsedObject:
     """This class is a container for PASParsedTypeInObject objects, it constructs them and store them"""
@@ -39,7 +32,7 @@ class PASParsedObject:
             return False
 
         #Construct a regex to check data
-        regexBase = "(([0-9]|[a-fA-F]){2})"
+        regexBase = "(?:(?:[0-9]|[a-fA-F]){2})"
         regexString = ""
         cursor = 0
         for field in self.fields:
