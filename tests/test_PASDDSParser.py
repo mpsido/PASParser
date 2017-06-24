@@ -17,7 +17,7 @@ class Test_PASDDSParser(unittest.TestCase):
     def setUp(self):
         self.ddsParser = PASDDSObjectParser()
         self.objReader = PASObjReader()
-        set_debug_flags(DEBUG_DDS_OPT_PARSING)
+        set_debug_flags(0)
 
     def test_readFile(self):
         with self.assertRaises(PASDDSFileReadingException) as exception:
@@ -34,6 +34,8 @@ class Test_PASDDSParser(unittest.TestCase):
         self.assertEqual(self.ddsParser.fileName, "74000")
         self.assertEqual(self.ddsParser.filePath, "tests/files/74000")
 
+        self.assertEqual(len(self.ddsParser.sections()), 6)
+        print (self.ddsParser.iniBlockNames)
         self.assertListEqual(self.ddsParser.iniBlockNames, ['[ENTETE]', '[MPE_PARAMETERS]', '[PAS_OD_WRITE]', '[PAS_SDO_SEND_DIRECT]',
         '[PAS_PDO_SEND]', '[PAS_SDO_SEND_DIRECT]'])
 

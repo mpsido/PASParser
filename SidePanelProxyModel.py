@@ -23,8 +23,16 @@ class SidePanelProxyModel(QtGui.QSortFilterProxyModel):
     def setCurrentNodeIndex(self, index):
         node = self.sourceModel().nodeFromIndex(index)
         if node.typeOfNode == ENUM_TYPE_NODE_OBJECT or (node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT and len(node) > 0):
+            self.beginRemoveRows(QtCore.QModelIndex(), 0, self.rowCount())
+            self.endRemoveRows()
             self.currentNodeIndex = index
             self.currentNode = node
+            if len(self.currentNode) > 0:
+                self.beginInsertRows(QtCore.QModelIndex(), 0, len(self.currentNode))
+                self.endInsertRows()
+            else:
+                self.beginInsertRow(QtCore.QModelIndex(), 0)
+                self.endInsertRow()
             self.layoutChanged.emit()
 
 

@@ -18,7 +18,7 @@ from print_debug import *
 import ui_MainWindow
 
 
-set_debug_flags(DEBUG_FLAG_ADD_REMOVE_ELEMENTS | DEBUG_MMI | DEBUG_DDS_OPT_PARSING)
+set_debug_flags(DEBUG_FLAG_ADD_REMOVE_ELEMENTS | DEBUG_MMI)
 
 class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
     def __init__(self, parent=None):
@@ -143,6 +143,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
             print_debug("Load node {0}".format(node.id), DEBUG_MMI)
             self.sidePanelModel[path].setCurrentNodeIndex(index)
             self.tableView.setModel(self.sidePanelModel[path])
+#            self.sidePanelModel[path].sort(0)
 
 
 
@@ -219,6 +220,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.ddsParser[path].removeDataAtId(self.actionNode.id)
         self.model[path].removeRow(self.actionIndex.row(), QtCore.QModelIndex())
         self.hasModifToSave[path] = True
+        # TODO: bug à la sauvegarde quand on remove tous les objects
 
 
     @QtCore.pyqtSlot(QtCore.QString) # signal with arguments
@@ -236,8 +238,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
           bSave = QtGui.QMessageBox.question(self, tr("Save"), tr("Do you want to save data in path {0} before leaving ?").format(path),
                     QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
           if bSave == QtGui.QMessageBox.Yes:
-              for path,ddsParser in self.ddsParser.items():
-                  ddsParser.write()
+              self.ddsParser[path].write()
         self.tabWidget.removeTab(tabIndex)
         self.clearViews(path)
 

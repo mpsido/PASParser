@@ -16,7 +16,7 @@ from PASObjReader import *
 class Test_PASObjReader(unittest.TestCase):
     def setUp(self):
         self.objReader = PASObjReader()
-        set_debug_flags(DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
+        set_debug_flags(0)
 
     def test_10000(self):
 
