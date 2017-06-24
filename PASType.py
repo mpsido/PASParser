@@ -35,20 +35,17 @@ class PASType:
 
 
 class PASTypeReader:
-    def __init__(self, xmlFilePath = ""):
-        if xmlFilePath == "":
-            xmlFilePath = "OD_types.xml"
-        self.OD_types = etree.parse(xmlFilePath)
-        self.PASTypesDict = {}
-        self.readTypes()
+    OD_types = etree.parse("OD_types.xml")
+    PASTypesDict = {}
+    bPASTypeReader_imported = False
 
-
-    def readTypes(self):
+    @classmethod
+    def readTypes(PASTypeReader):
         types = ""
-        if (hasattr(self, 'PASTypesString')):
-            types = self.PASTypesString
+        if (hasattr(PASTypeReader, 'PASTypesString')):
+            types = PASTypeReader.PASTypesString
         else:
-            for elt in self.OD_types.findall("type"):
+            for elt in PASTypeReader.OD_types.findall("type"):
                 elt_id = elt.get('id')
 
                 #construction d'un objet "PASType"
@@ -62,11 +59,15 @@ class PASTypeReader:
                 Type.padding = int(elt.get('padding'))
                 Type.xmlNode = elt
 
-                self.PASTypesDict[elt_id] = Type
+                PASTypeReader.PASTypesDict[elt_id] = Type
                 types += Type.name + "\n"
 
             if len(types) > 0:
                 types = types[:-1]
-            self.PASTypesString = types
+            PASTypeReader.PASTypesString = types
 
         return types
+
+if PASTypeReader.bPASTypeReader_imported == False:
+    PASTypeReader.readTypes()
+    PASTypeReader.bPASTypeReader_imported = True
