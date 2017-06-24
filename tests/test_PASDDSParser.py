@@ -11,12 +11,12 @@ sys.path.append(lib_path)
 import unittest
 
 from PASDDSParser import *
-from PASObjReader import *
+from PASParsedObjectContainer import *
 
 class Test_PASDDSParser(unittest.TestCase):
     def setUp(self):
         self.ddsParser = PASDDSObjectParser()
-        self.objReader = PASObjReader()
+        self.pasObjContainer = PASParsedObjectContainer()
         set_debug_flags(DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
 
     def test_readFile(self):
@@ -50,18 +50,19 @@ class Test_PASDDSParser(unittest.TestCase):
         self.assertEqual(data_74000,
             '02 00 606D0C006054D052584D50463863580260096400D00764006400F40101010104 00A41011301068ABE000')
 
-        self.objReader["74000"].readData(data_74000)
-        data_74000_modified = self.objReader["74000"].modifyData("sub0", "04")
+        self.pasObjContainer.parseObject("74000")
+        self.pasObjContainer["74000"].readData(data_74000)
+        data_74000_modified = self.pasObjContainer["74000"].modifyData("sub0", "04")
 
-        self.ddsParser.setData(data_74000_modified)
+        self.ddsParser._setData(data_74000_modified)
 
         data_74000 = self.ddsParser.getData()
         self.assertEqual(data_74000,
             '04 00 606D0C006054D052584D50463863580260096400D00764006400F40101010104 00A41011301068ABE000')
 
-        with  self.assertRaises(PASDDSFileReadingException) as exception:
+        with self.assertRaises(PASDDSFileReadingException) as exception:
             wrong_data = "0201AF"
-            self.ddsParser.setData(wrong_data)
+            self.ddsParser.setDataAtId("74000", wrong_data)
 
         data_74000 = self.ddsParser.getData()
         self.assertEqual(data_74000,
@@ -78,8 +79,8 @@ class Test_PASDDSParser(unittest.TestCase):
             '04 00 606D0C006054D052584D50463863580260096400D00764006400F40101010104 00A41011301068ABE000')
 
         #remodify data
-        data_74000_modified = self.objReader["74000"].modifyData("sub0", "02")
-        self.ddsParser.setData(data_74000_modified)
+        data_74000_modified = self.pasObjContainer["74000"].modifyData("sub0", "02")
+        self.ddsParser._setData(data_74000_modified)
         data_74000 = self.ddsParser.getData()
         self.assertEqual(data_74000,
             '02 00 606D0C006054D052584D50463863580260096400D00764006400F40101010104 00A41011301068ABE000')
@@ -184,7 +185,7 @@ class Test_PASDDSParser(unittest.TestCase):
         with self.assertRaises(PASDDSFileReadingException) as exception:
             self.ddsParser.setDataAtId("20003", "FD 00 0300 48 00 0E00 2C01 0000 00 A1 00 00 000 0000")
             self.assertEqual("Data is invalid :\nDATA     = {0}\nSPECTRUM = {1}".format("FD 00 0300 48 00 0E00 2C01 0000 00 A1 00 00 000 0000",
-                self.objReader["20003"].spectrum))
+                self.pasObjContainer["20003"].spectrum))
 
         data_4 = self.ddsParser.getData(4)
         self.assertEqual(data_4, "0D 06 0400 48 00 0000 0000 0000 08 00 00 00 0000 0000")

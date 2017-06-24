@@ -5,7 +5,7 @@ import os
 import re
 import ConfigParser
 from print_debug import *
-from PASObjReader import *
+from PASParsedObjectContainer import *
 
 
 class PASDDSFileReadingException(Exception):
@@ -71,7 +71,6 @@ class PASDDSObjectParser:
         self.iniBlocks = []
         self._PAS_OD_WRITE_Blocks = []
         self._objectIdsList = []
-        self.objReader = PASObjReader()
         self.bFileParsed = False
 
     def __iter__(self):
@@ -117,7 +116,7 @@ class PASDDSObjectParser:
         path = os.sep.join(pathInfo[:-1])
 
         if os.path.isfile(filePath) == False:
-            fileName = self.objReader.getStartIndexFromObjectIndex(fileName)
+            fileName = PASObjReader.getStartIndexFromObjectIndex(fileName)
             filePath = os.sep.join([path,fileName])
 
         if os.path.isfile(filePath) == False:
@@ -237,13 +236,15 @@ class PASDDSObjectParser:
 
     def setDataAtId(self, objectId, newValue):
         offset = self._objectIdsList.index(objectId)
-        self.setData(newValue, offset)
 
-    def setData(self, newValue, offset = 0):
-        if self.objReader[self.fileName].isDataValid(newValue):
-            self._PAS_OD_WRITE_Blocks[offset]['DATA'] = newValue
+        if PASObjReader.isDataValid(objectId, newValue):
+            self._setData(newValue, offset)
         else:
-            raise PASDDSFileReadingException("Data is invalid :\nDATA     = {0}\nSPECTRUM = {1}".format(newValue, self.objReader[self.fileName].spectrum))
+            raise PASDDSFileReadingException("Data is invalid :\nDATA     = {0}\nSPECTRUM = {1}".format(newValue,
+                    PASObjReader.spectrums[PASObjReader.getStartIndexFromObjectIndex(self.fileName)]))
+
+    def _setData(self, newValue, offset = 0):
+        self._PAS_OD_WRITE_Blocks[offset]['DATA'] = newValue
 
 
     def _parseBlocks(self):

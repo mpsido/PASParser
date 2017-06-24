@@ -7,7 +7,7 @@ from PyQt4.QtCore import QT_TR_NOOP as tr
 import sys
 import re
 import os
-from PASObjReader import *
+from PASParsedObjectContainer import *
 from PASDDSParser import *
 from PASParserTreeModel import PASParserTreeModel,PASObjectNode
 from PASParserProxyModel import *
@@ -33,7 +33,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.hasModifToSave = {}
 
         self.ddsParser = {}
-        self.objReader = {}
+        self.pasObjContainer = {}
 
         #temporary code for tests:
         cur_dir = os.path.dirname(os.path.realpath(__file__))
@@ -59,7 +59,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.pasDir.append(fullPath)
         shortPath = re.split(r'[/\\]', fullPath)[-1]
 
-        self.objReader[fullPath] = PASObjReader()
+        self.pasObjContainer[fullPath] = PASParsedObjectContainer()
 
         model = PASParserTreeModel(self)
         model.dataChanged.connect(self.repaintViews)
@@ -113,29 +113,29 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
                 if i > 0: #if the file contains many [PAS_OD_WRITE] fields
                     nodeIdInDDS = self.ddsParser[path].getId(objectId, i)
                     print_debug("nodeIdInDDS {0} for offset {1}, fullPath {2}".format(nodeIdInDDS, i, fullPath), DEBUG_MMI)
-                    parsedObj = self.objReader[path].addIndexToObject(nodeIdInDDS, objectId)
+                    parsedObj = self.pasObjContainer[path].addIndexToObject(nodeIdInDDS, objectId)
                     node = PASObjectNode(nodeIdInDDS, '', '', '', parsedObj, model.root)
                     model.insertRow(index.row() + i, QtCore.QModelIndex())
 
                 data = self.ddsParser[path].getData(objectId, i)
+                self.pasObjContainer[path].parseObject(node.id)
+                node.rangeOrObjectName = self.pasObjContainer[path][node.id].objectName
+                self.pasObjContainer[path][node.id].readData(data)
+                node.pasTypeOrObject = self.pasObjContainer[path][node.id]
 
-                node.rangeOrObjectName = self.objReader[path][node.id].objectName
-                self.objReader[path][node.id].readData(data)
-                node.pasTypeOrObject = self.objReader[path][node.id]
-
-                for j, field in enumerate(self.objReader[path][node.id].fields):
+                for j, field in enumerate(self.pasObjContainer[path][node.id].fields):
                     if field.arraySize == 1:
                         PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0], field.range_[1]),
-                            field.size, field.arraySize, self.objReader[path][node.id][field.nameOfField], node)
+                            field.size, field.arraySize, self.pasObjContainer[path][node.id][field.nameOfField], node)
                     else: #in case of array append each field of the array
                         arrayNode = PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0][0], field.range_[-1][1]),
-                            field.size, field.arraySize, self.objReader[path][node.id][field.nameOfField], node)
+                            field.size, field.arraySize, self.pasObjContainer[path][node.id][field.nameOfField], node)
                         for i in range(0, field.arraySize):
                             PASObjectNode(field.nameOfField + "[{0}]".format(i), "byte {0} to {1}".format(field.range_[i][0], field.range_[i][1]),
-                                                field.size, field.arraySize, self.objReader[path][node.id][field.nameOfField], arrayNode)
+                                                field.size, field.arraySize, self.pasObjContainer[path][node.id][field.nameOfField], arrayNode)
                         if model.insertRows(0, field.arraySize, model.index(i, 0, model.index(j, 0, index) )) == False:
                             print("Failed to insert array rows to {0}".format(field.nameOfField))
-                if model.insertRows(0, self.objReader[path][node.id].nbFields(), index) == False:
+                if model.insertRows(0, self.pasObjContainer[path][node.id].nbFields(), index) == False:
                     print("Failed to insert row to {0}".format(model.nodeFromIndex(index).id))
 
 
@@ -153,8 +153,8 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         node = self.model[path].nodeFromIndex(index)
         id = node.pasTypeOrObject.objectIndex
-        data = self.objReader[path][id].dataString
-        if self.objReader[path][id].isDataValid(data):
+        data = self.pasObjContainer[path][id].dataString
+        if PASObjReader.isDataValid(id, data):
             self.ddsParser[path].setData(id, data)
             if node.nodeUpdated:
                 self.hasModifToSave[path] = True
@@ -195,7 +195,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         newId = hex(actionId)[2:]
         print_debug("PASParserMainWindow.item_addAction newId = {0}".format(newId), DEBUG_MMI)
         try:
-            parsedObj = self.objReader[path].addIndexToObject(newId, self.actionNode.id)
+            parsedObj = self.pasObjContainer[path].addIndexToObject(newId, self.actionNode.id)
         except PASParsingException as exception:
             print_debug(exception.message, DEBUG_MMI)
         except:
@@ -216,7 +216,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         tabIndex = self.tabWidget.currentIndex()
         path = str(self.tabWidget.tabToolTip(tabIndex))
         actionId = int(self.actionNode.id, 16)
-        parsedObj = self.objReader[path].removeIndexAt(self.actionNode.id)
+        parsedObj = self.pasObjContainer[path].removeIndexAt(self.actionNode.id)
         self.ddsParser[path].removeDataAtId(self.actionNode.id)
         self.model[path].removeRow(self.actionIndex.row(), QtCore.QModelIndex())
         self.hasModifToSave[path] = True

@@ -20,39 +20,6 @@ class PASParsedObject:
         self.formatedData = {}
         self.objectCount = ''
 
-    def isDataValid(self, data):
-        if self.spectrum == "" or self.spectrum == "Empty Spectrum":
-            print("This Object was not correctly parsed")
-            return False
-        while data.endswith(' '):
-           data = data[:-1]
-
-        if len(data) != len(self.spectrum):
-            print_debug("len(data) != len(spectrum)", DEBUG_DATA_CHECK)
-            return False
-
-        #Construct a regex to check data
-        regexBase = "(?:(?:[0-9]|[a-fA-F]){2})"
-        regexString = ""
-        cursor = 0
-        for field in self.fields:
-            if field.arraySize == 1:
-                regexString += PASParsedObject.paddingString(field.range_[0], cursor)
-                regexString += regexBase + "{" + "{0}".format(field.size) + "} "
-                cursor = field.range_[1] + 1
-            else:
-                regexString += PASParsedObject.paddingString(field.range_[0][0], cursor)
-                for arrayField in field.range_:
-                    regexString += regexBase + "{" + "{0}".format(field.size) + "} "
-                cursor = field.range_[-1][1] + 1
-
-        while regexString.endswith(' '):
-           regexString = regexString[:-1]
-
-#        print(regexString)
-        regMatch = re.compile(regexString)
-
-        return regMatch.match(data) is not None
 
     def paddingString(nextbyteCursor, currentCursor):
         strPadding = ""
@@ -149,8 +116,8 @@ class PASParsedObject:
         self.formatedData = {}
         self.dataString = ""
 
-        if self.isDataValid(data) == False:
-            print("WARNING:\nDATA={0}\nNot valid for index {1}".format(data, self.objectIndex))
+#        if PASObjReader.isDataValid(data) == False:
+#            print("WARNING:\nDATA={0}\nNot valid for index {1}".format(data, self.objectIndex))
 
         data = data.replace(' ','')
         for field in self.fields:
