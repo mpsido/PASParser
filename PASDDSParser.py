@@ -24,17 +24,21 @@ class INIBlock:
 #        self.iniOptions = {} #avoid using dico to keep order
         self.iniOptionsNames = []
         self.iniOptionsValues = []
-        self._isLastBlock = True
-        self._isFirstBlock = True
+        self._previousBlock = self
+        self._nextBlock = self
+
+    def previousBlock(self):
+        return self._previousBlock
+
+
+    def nextBlock(self):
+        return self._nextBlock
 
 
     def setNextBlock(self, iniNextBlock):
-        self.nextBlock = iniNextBlock
-        if hasattr(iniNextBlock, 'previousBlock'):
-            self.previousBlock = iniNextBlock.previousBlock
-        iniNextBlock.previousBlock = self
-        iniNextBlock._isFirstBlock = False
-        self._isLastBlock = False
+        self._nextBlock = iniNextBlock
+        self._previousBlock = iniNextBlock._previousBlock
+        iniNextBlock._previousBlock = self
 
 
     def __repr__(self):
@@ -76,25 +80,16 @@ class PASDDSObjectParser:
     def __iter__(self):
         """Initializes iteration, this object iterates iniBlocks"""
         # iterates self.iniBlocks (type INIBlock)
-        self.bIterating = True
         self.currentBlock = self.firstBlock
         print_debug("Init: {0}".format(self.currentBlock.name), DEBUG_DDS_OPT_PARSING)
         return self
 
     def next(self):
-        i = 0
-        if hasattr(self.currentBlock, "nextBlock"):
-            i += 1
-            currentBlock = self.currentBlock
-            self.currentBlock = self.currentBlock.nextBlock
-            print_debug("Next: {0}".format(self.currentBlock.name), DEBUG_DDS_OPT_PARSING)
-        elif self.bIterating:
-            currentBlock = self.currentBlock
-            self.bIterating = False
-        else:
-            print_debug("StopIteration {0}".format(i), DEBUG_DDS_OPT_PARSING)
+        if self.currentBlock.nextBlock() is self.currentBlock:
             raise StopIteration()
-        return currentBlock
+        else:
+            self.currentBlock = self.currentBlock.nextBlock()
+        return self.currentBlock
 
     def __repr__(self):
         """Constructs the full file text content"""
@@ -182,9 +177,7 @@ class PASDDSObjectParser:
             blockToRemove = self._PAS_OD_WRITE_Blocks.pop(offset)
             self._objectIdsList.pop(offset)
 
-            blockToRemove.previousBlock.setNextBlock(blockToRemove.nextBlock)
-#            if offset > 0 and hasattr(blockToRemove, 'nextBlock'):
-#                self._PAS_OD_WRITE_Blocks[offset-1].nextBlock = blockToRemove.nextBlock
+            blockToRemove.previousBlock().setNextBlock(blockToRemove.nextBlock())
             return blockToRemove
 
     def appendDataId(self, newId):
@@ -204,11 +197,7 @@ class PASDDSObjectParser:
                     optionValue = "{0:>08} 0000".format(newId)
                 iniBlock.addItem(optionName, optionValue)
 
-            if len(self._PAS_OD_WRITE_Blocks) > 0:
-#                self._PAS_OD_WRITE_Blocks[-1].nextBlock = iniBlock
-                self._PAS_OD_WRITE_Blocks[-1].setNextBlock(iniBlock)
-            else:
-                self.firstBlockBefore_PAS_OD_WRITE.setNextBlock(iniBlock)
+            iniBlock.previousBlock().setNextBlock(iniBlock)
             self._PAS_OD_WRITE_Blocks.append(iniBlock) #TODO test list _PAS_OD_WRITE_Blocks a little bit better in automatic tests
             self._objectIdsList.append(newId)
 
@@ -227,10 +216,7 @@ class PASDDSObjectParser:
                     optionValue = "{0:>08} 0000".format(newId)
                 iniBlock.addItem(optionName, optionValue)
 
-#            iniBlock.nextBlock = self._PAS_OD_WRITE_Blocks[offset]
             iniBlock.setNextBlock(self._PAS_OD_WRITE_Blocks[offset])
-#            if offset > 0:
-#                self._PAS_OD_WRITE_Blocks[offset-1].nextBlock = iniBlock
             self._PAS_OD_WRITE_Blocks.insert(offset, iniBlock)
             self._objectIdsList.insert(offset, newId)
 
@@ -248,8 +234,8 @@ class PASDDSObjectParser:
 
 
     def _parseBlocks(self):
-        blocksSeparator = re.compile("^\s*\[.*\](?:\s*)$", flags = re.MULTILINE)
-        self.iniBlockNames = [blockName.lstrip().rstrip() for blockName in blocksSeparator.findall(self.fileTextContent)]
+        blocksSeparator = re.compile("^(?:\s*)\[.*\](?:\s*)$", flags = re.MULTILINE)
+        self.iniBlockNames = [blockName for blockName in blocksSeparator.findall(fileTextContent)]
 
         self.iniBlockTexts = [ block.lstrip() for block in  blocksSeparator.split(self.fileTextContent) ]
         if self.iniBlockTexts[0].lstrip() == '':
@@ -278,24 +264,17 @@ class PASDDSObjectParser:
                     print_debug("OPT {0} : {1}".format(optName, optValue), DEBUG_DDS_OPT_PARSING)
                     iniBlock.addItem(optName, optValue)
 
+            print_debug("Block: {0}".format(iniBlock.name), DEBUG_DDS_OPT_PARSING)
             if bFirstBlock:
-                iniBlock.previousBlock = iniBlock
                 self.firstBlock = iniBlock
                 previousBlock = iniBlock
                 bFirstBlock = False
             else:
-                print_debug("Block: {0}".format(previousBlock.name), DEBUG_DDS_OPT_PARSING)
-#                previousBlock.nextBlock = iniBlock
                 previousBlock.setNextBlock(iniBlock)
                 previousBlock = iniBlock
             self.iniBlocks.append(iniBlock)
 
-#            if iniBlock.name == "[PAS_OD_WRITE]" and hasattr(self, 'firstBlockBefore_PAS_OD_WRITE') == False:
-#                self.firstBlockBefore_PAS_OD_WRITE = iniBlock.previousBlock
-
-        print_debug("Block: {0}".format(iniBlock.name), DEBUG_DDS_OPT_PARSING)
         self._PAS_OD_WRITE_Blocks = [block for block in self.iniBlocks if block.name == "[PAS_OD_WRITE]"]
-
         self._objectIdsList = [ self.getId(i) for i in range(0, self.nbDataId()) ]
 
 
