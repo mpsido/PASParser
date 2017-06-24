@@ -25,6 +25,7 @@ class PASObjReader:
         self._parsedObjects = {}
         self.typeReader = PASTypeReader()
         self.readObjects()
+        self._objectIndexRanges = [] #list of tuple for getStartIndexFromObjectIndex function
     def readObjects(self):
         elts = ""
         if (hasattr(self, 'PASObjectsString')):
@@ -61,7 +62,12 @@ class PASObjReader:
     def removeIndexAt(self, objectIndex):
         if objectIndex in self._parsedObjects:
             if objectIndex != self._parsedObjects[objectIndex].startIndex: #do not delete startIndex object
-                del self._parsedObjects[objectIndex]
+                print_debug("Removing index element : {0}, startIndex = {1}".format(objectIndex,
+                    self._parsedObjects[objectIndex].startIndex), DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
+                self._parsedObjects.pop(objectIndex)
+                self._PASObjXMLDict.pop(objectIndex)
+            else:
+                print_debug("Refuse to remove startIndex element : {0}".format(self._parsedObjects[objectIndex].startIndex), DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
         else:
             raise KeyError("PASObjReader.removeIndexAt : ObjectIndex {0} do not exist, cannot remove it".format(objectIndex))
 
@@ -69,9 +75,11 @@ class PASObjReader:
         """
         Creates a new object with index 'objectIndex' using the PASParsedObject whose objectIndex is 'startIndex'
         """
-        print_debug("adding index {0} to startIndex {1}".format(objectIndex, startIndex), DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
+        print_debug("Trying to add index {0} to startIndex {1}".format(objectIndex, startIndex), DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
         if startIndex not in self._parsedObjects:
             raise PASParsingException("PASObjReader.addIndexToObject : start index {0} do not exist".format(startIndex))
+
+        startIndex = self.getStartIndexFromObjectIndex(startIndex)
 
         objectIndex = objectIndex.split(' ')[0]
         count = int(self._parsedObjects[startIndex].objectCount)
@@ -82,8 +90,10 @@ class PASObjReader:
         if objectIndex in self._parsedObjects:
             raise PASParsingException("PASObjReader.addIndexToObject : index {0} already exists".format(startIndex))
 
+        self._PASObjXMLDict[objectIndex] = self._PASObjXMLDict[startIndex]
         self._parsedObjects[objectIndex] = PASObjReader._xmlParseObject(self._PASObjXMLDict[startIndex], self.typeReader, objectIndex)
-        self._parsedObjects[objectIndex].startIndex = startIndex
+        print_debug("Success to add index {0} to startIndex {1}".format(objectIndex, startIndex), DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
+        return self._parsedObjects[objectIndex]
 
 
     def _xmlParseObject(xmlNode, typeReader, objectId):
@@ -99,11 +109,14 @@ class PASObjReader:
         parsedObject = PASParsedObject(objectId)
         parsedObject.groupName = xmlNode.getparent().get('name')
         parsedObject.objectName = xmlNode.get('name')
+        parsedObject.startIndex = xmlNode.get('start_index')[2:]
         if xmlNode.find('count') is not None:
             parsedObject.objectCount = int(xmlNode.find('count').get('value'))
             #TODO certains objets ont leur count défini dans le 'joinGroup'
         else:
             parsedObject.objectCount = 1
+        print_debug("Created a new parsedObj with id {} and startIndex {} count = {}".format(objectId,
+            parsedObject.startIndex, parsedObject.objectCount), DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
         for typeNode in xmlNode.findall('subindex'): #<subindex name="" type="type_0230" version="03150000">
             nameOfField = typeNode.get('name')
             typeName = typeNode.get('type')
@@ -158,10 +171,26 @@ class PASObjReader:
         if objectId not in self._parsedObjects:
             if objectId in self._PASObjXMLDict:
                 self._parsedObjects[objectId] = PASObjReader._xmlParseObject(self._PASObjXMLDict[objectId], self.typeReader, objectId)
-                self._parsedObjects[objectId].startIndex = objectId
+                self._objectIndexRanges.append( (int(self._parsedObjects[objectId].startIndex,16),
+                                                int(self._parsedObjects[objectId].startIndex,16) + self._parsedObjects[objectId].objectCount))
+                print_debug("Range : {0} to {1}".format(self._objectIndexRanges[-1][0], self._objectIndexRanges[-1][1], DEBUG_FLAG_ADD_REMOVE_ELEMENTS))
                 spectrum = self._parsedObjects[objectId].spectrum
             else:
                 spectrum = "Non existing object"
         else:
             spectrum = self._parsedObjects[objectId].spectrum
         return spectrum
+
+    def getStartIndexFromObjectIndex(self, objectIndex):
+        try:
+            objIdx = int(objectIndex, 16)
+        except ValueError:
+            return "Invalid index"
+        else:
+            startIndexList = [idx for idx,end in self._objectIndexRanges if objIdx >= idx and objIdx < end]
+            if len(startIndexList) > 1:
+                raise PASParsingException("PASObjReader.getStartIndexFromObjectIndex {0}".format(startIndexList))
+            if len(startIndexList) == 0:
+                return "Invalid index"
+            else:
+                return hex(startIndexList[0])[2:]

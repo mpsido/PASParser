@@ -24,6 +24,18 @@ class INIBlock:
 #        self.iniOptions = {} #avoid using dico to keep order
         self.iniOptionsNames = []
         self.iniOptionsValues = []
+        self._isLastBlock = True
+        self._isFirstBlock = True
+
+
+    def setNextBlock(self, iniNextBlock):
+        self.nextBlock = iniNextBlock
+        if hasattr(iniNextBlock, 'previousBlock'):
+            self.previousBlock = iniNextBlock.previousBlock
+        iniNextBlock.previousBlock = self
+        iniNextBlock._isFirstBlock = False
+        self._isLastBlock = False
+
 
     def __repr__(self):
         """Constructs the INI block as a text"""
@@ -60,6 +72,7 @@ class PASDDSObjectParser:
         self._PAS_OD_WRITE_Blocks = []
         self._objectIdsList = []
         self.objReader = PASObjReader()
+        self.bFileParsed = False
 
     def __iter__(self):
         """Initializes iteration, this object iterates iniBlocks"""
@@ -91,30 +104,37 @@ class PASDDSObjectParser:
             description += str(iniBlock)
         return description
 
-#        description = ""
-#        for i,blockName in enumerate(self.iniBlockNames):
-#            description += blockName + "\n"
-#            description += str(self.iniBlocks[i]) #+ "\n\n"
-#        return description
-
-
-    def parse(self,  path, fileName):
-        self.open(os.sep.join([path,fileName]))
+    def parse(self, path, fileName):
+        if self.bFileParsed == False:# or path != self.filePath:
+            print_debug("PASDDSObjectParser.parse Parsing object {0} at {1}".format(fileName, path), DEBUG_DDS_OPT_PARSING)
+            self.open(os.sep.join([path,fileName]))
+        self.bFileParsed = True
 
 
     def open(self, filePath):
+        pathInfo = re.split(r'[/\\]', filePath)
+        fileName = pathInfo[-1]
+        path = os.sep.join(pathInfo[:-1])
+
+        if os.path.isfile(filePath) == False:
+            fileName = self.objReader.getStartIndexFromObjectIndex(fileName)
+            filePath = os.sep.join([path,fileName])
+
         if os.path.isfile(filePath) == False:
             raise PASDDSFileReadingException("{0} is not a valid file path".format(filePath))
 
-        fileName = re.split(r'[/\\]', filePath)[-1]
+
         if re.match(r'^([0-9]|[a-f])+$', fileName, flags=re.I) is None:
             raise PASDDSFileReadingException("Apparently file {0} is not a dds object file".format(filePath))
 
         #reset existing data
         self.__init__()
 
+
         self.filePath = filePath
         self.fileName = fileName
+
+
 
         with open(filePath, 'r') as file:
             self.fileTextContent = file.read()
@@ -153,34 +173,69 @@ class PASDDSObjectParser:
         """Returns the number of [PAS_OD_WRITE] blocks in the file """
         return len(self._PAS_OD_WRITE_Blocks)
 
-    def removeDataId(self, offset):
+    def removeDataAtId(self, objectId):
         """Removes the PAS_OD_WRITE block located at position offset
         raises IndexError if offset is invalid """
-        blockToRemove =  self._PAS_OD_WRITE_Blocks.pop(offset) #raises IndexError if offset is invalid
-        if offset > 0 and hasattr(blockToRemove, 'nextBlock'):
-            self._PAS_OD_WRITE_Blocks[offset-1].nextBlock = blockToRemove.nextBlock
-        return blockToRemove
+        if objectId not in self._objectIdsList:
+            print_debug("PASDDSObjectParser.removeDataAtId Id {0} is missing, cannot remove it".format(newId), DEBUG_DDS_OPT_PARSING)
+        else:
+            offset = self._objectIdsList.index(objectId) #raises IndexError if offset is invalid
+            blockToRemove = self._PAS_OD_WRITE_Blocks.pop(offset)
+            self._objectIdsList.pop(offset)
 
+            blockToRemove.previousBlock.setNextBlock(blockToRemove.nextBlock)
+#            if offset > 0 and hasattr(blockToRemove, 'nextBlock'):
+#                self._PAS_OD_WRITE_Blocks[offset-1].nextBlock = blockToRemove.nextBlock
+            return blockToRemove
+
+    def appendDataId(self, newId):
+        """
+        Adds a PAS_OD_WRITE block in the file
+        Setting the ID of the new created block to 'newId'
+        The new block is appended after last PAS_OD_WRITE block
+        """
+        if newId in self._objectIdsList:
+            print_debug("PASDDSObjectParser.appendDataId Id {0} already exists cannot add it again".format(newId), DEBUG_DDS_OPT_PARSING)
+        else:
+            print_debug("PASDDSParser.appendDataId {0}".format(newId), DEBUG_DDS_OPT_PARSING)
+            iniBlock = INIBlock()
+            iniBlock.name = "[PAS_OD_WRITE]"
+            for optionName, optionValue in self._PAS_OD_WRITE_Blocks[-1].iterate():
+                if optionName == "ID":
+                    optionValue = "{0:>08} 0000".format(newId)
+                iniBlock.addItem(optionName, optionValue)
+
+            if len(self._PAS_OD_WRITE_Blocks) > 0:
+#                self._PAS_OD_WRITE_Blocks[-1].nextBlock = iniBlock
+                self._PAS_OD_WRITE_Blocks[-1].setNextBlock(iniBlock)
+            else:
+                self.firstBlockBefore_PAS_OD_WRITE.setNextBlock(iniBlock)
+            self._PAS_OD_WRITE_Blocks.append(iniBlock) #TODO test list _PAS_OD_WRITE_Blocks a little bit better in automatic tests
+            self._objectIdsList.append(newId)
 
 
     def insertDataId(self, newId, offset = 0):
         """Adds a PAS_OD_WRITE block in the file
-        Setting the data value of the new created block to 'newValue',
+        Setting the ID of the new created block to 'newId',
         the new block is insered BEFORE the block at 'offset' and its content (exept data) is a copy of the block at 'offset'"""
-        iniBlock = INIBlock()
-        iniBlock.name = "[PAS_OD_WRITE]"
-        for optionName, optionValue in self._PAS_OD_WRITE_Blocks[offset].iterate():
-            if optionName == "ID":
-                optionValue = "{0:>08} 0000".format(newId)
-            iniBlock.addItem(optionName, optionValue)
+        if newId in self._objectIdsList:
+            print_debug("PASDDSObjectParser.insertDataId Id {0} already exist cannot add it again".format(newId), DEBUG_DDS_OPT_PARSING)
+        else:
+            iniBlock = INIBlock()
+            iniBlock.name = "[PAS_OD_WRITE]"
+            for optionName, optionValue in self._PAS_OD_WRITE_Blocks[offset].iterate():
+                if optionName == "ID":
+                    optionValue = "{0:>08} 0000".format(newId)
+                iniBlock.addItem(optionName, optionValue)
 
-        iniBlock.nextBlock = self._PAS_OD_WRITE_Blocks[offset]
-        if offset > 0:
-            self._PAS_OD_WRITE_Blocks[offset-1].nextBlock = iniBlock
-        self._PAS_OD_WRITE_Blocks.insert(offset, iniBlock)
+#            iniBlock.nextBlock = self._PAS_OD_WRITE_Blocks[offset]
+            iniBlock.setNextBlock(self._PAS_OD_WRITE_Blocks[offset])
+#            if offset > 0:
+#                self._PAS_OD_WRITE_Blocks[offset-1].nextBlock = iniBlock
+            self._PAS_OD_WRITE_Blocks.insert(offset, iniBlock)
+            self._objectIdsList.insert(offset, newId)
 
-
-    def setDataAtId(self, newValue, objectId):
+    def setDataAtId(self, objectId, newValue):
         offset = self._objectIdsList.index(objectId)
         self.setData(newValue, offset)
 
@@ -200,7 +255,7 @@ class PASDDSObjectParser:
             self.iniBlockTexts.pop(0)
 
     def _parseValues(self):
-        firstBlock = True
+        bFirstBlock = True
         for i,block in enumerate(self.iniBlockTexts):
             print_debug("\nAt {0}, block \n{1}".format(i, block), DEBUG_DDS_OPT_PARSING)
             iniBlock = INIBlock()
@@ -222,15 +277,20 @@ class PASDDSObjectParser:
                     print_debug("OPT {0} : {1}".format(optName, optValue), DEBUG_DDS_OPT_PARSING)
                     iniBlock.addItem(optName, optValue)
 
-            if firstBlock:
+            if bFirstBlock:
+                iniBlock.previousBlock = iniBlock
                 self.firstBlock = iniBlock
                 previousBlock = iniBlock
-                firstBlock = False
+                bFirstBlock = False
             else:
                 print_debug("Block: {0}".format(previousBlock.name), DEBUG_DDS_OPT_PARSING)
-                previousBlock.nextBlock = iniBlock
+#                previousBlock.nextBlock = iniBlock
+                previousBlock.setNextBlock(iniBlock)
                 previousBlock = iniBlock
             self.iniBlocks.append(iniBlock)
+
+#            if iniBlock.name == "[PAS_OD_WRITE]" and hasattr(self, 'firstBlockBefore_PAS_OD_WRITE') == False:
+#                self.firstBlockBefore_PAS_OD_WRITE = iniBlock.previousBlock
 
         print_debug("Block: {0}".format(iniBlock.name), DEBUG_DDS_OPT_PARSING)
         self._PAS_OD_WRITE_Blocks = [block for block in self.iniBlocks if block.name == "[PAS_OD_WRITE]"]
@@ -243,6 +303,7 @@ class PASDDSParser:
         self.parsedObjects = {}
 
     def parse(self,  path, objectId):
+        print_debug("Parsing object {0} at {1}".format(objectId, path), DEBUG_DDS_OPT_PARSING)
         if objectId in self.parsedObjects:
             self.parsedObjects[objectId].parse(path, objectId)
         else:
@@ -262,8 +323,17 @@ class PASDDSParser:
         return self.parsedObjects[objectId].getData(offset)
 
     def setData(self, objectId, data):
-        return self.parsedObjects[objectId].setDataAtId(data, objectId)
+        return self.parsedObjects[objectId].setDataAtId(objectId, data)
 
     def write(self):
         for objectId,parsedObject in self.parsedObjects.items():
             parsedObject.write()
+
+    def removeDataAtId(self, objectId):
+        self.parsedObjects[objectId].removeDataAtId(objectId)
+        self.parsedObjects.pop(objectId)
+
+    def appendDataId(self, startIndex, objectId):
+        parsedObject = self.parsedObjects[startIndex]
+        parsedObject.appendDataId(objectId)
+        self.parsedObjects[objectId] = parsedObject

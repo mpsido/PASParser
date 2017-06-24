@@ -8,5 +8,5 @@ from PASParserMainWindow import *
 if __name__=='__main__':
     app = QtGui.QApplication(sys.argv)
     pasParserMainWindow = PASParserMainWindow()
-    pasParserMainWindow.main()
+    pasParserMainWindow.show()
     app.exec_()

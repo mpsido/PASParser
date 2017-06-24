@@ -16,7 +16,7 @@ from PASObjReader import *
 class Test_PASObjReader(unittest.TestCase):
     def setUp(self):
         self.objReader = PASObjReader()
-        set_debug_flags(0)
+        set_debug_flags(DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
 
     def test_10000(self):
 
@@ -396,6 +396,27 @@ class Test_PASObjReader(unittest.TestCase):
         self.objReader["20000"]
         self.objReader.removeIndexAt("20000") #the source index should not be removed
         self.objReader["20000"]
+
+    def test_getStartIndexFromObjectIndex(self):
+        self.objReader.parseObject("20000")
+        print(self.objReader._objectIndexRanges)
+        self.assertEqual(self.objReader["20000"].objectCount, 2048)
+
+        self.assertEqual("20000", self.objReader.getStartIndexFromObjectIndex("20045"))
+        self.assertEqual("20000", self.objReader.getStartIndexFromObjectIndex("20111"))
+        self.assertEqual("20000", self.objReader.getStartIndexFromObjectIndex("20000"))
+        self.assertEqual("20000", self.objReader.getStartIndexFromObjectIndex("20799"))
+        self.assertEqual("20000", self.objReader.getStartIndexFromObjectIndex("20047"))
+
+
+        self.assertEqual("Invalid index", self.objReader.getStartIndexFromObjectIndex("20800"))
+        self.assertEqual("Invalid index", self.objReader.getStartIndexFromObjectIndex("74000"))
+        self.assertEqual("Invalid index", self.objReader.getStartIndexFromObjectIndex("1945546"))
+        self.assertEqual("Invalid index", self.objReader.getStartIndexFromObjectIndex("220"))
+
+
+        self.objReader.parseObject("74000")
+        self.assertEqual("74000", self.objReader.getStartIndexFromObjectIndex("74000"))
 
 
 

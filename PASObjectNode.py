@@ -43,8 +43,7 @@ class PASObjectNode(object):
 
     def childAtRow(self, row):
         if row > len(self.children):
-            print_debug("PASObjectNode.childAtRow : Element: {0} Row: {1} is out of range. Nb Elements: {2}".format(self.id, row, len(self.children)), DEBUG_MMI)
-            return self
+            raise IndexError("PASObjectNode.childAtRow : Element: {0} Row: {1} is out of range. Nb Elements: {2}".format(self.id, row, len(self.children)))
         return self.children[row]
 
     def rowOfChild(self, child):

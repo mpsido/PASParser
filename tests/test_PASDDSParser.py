@@ -17,6 +17,7 @@ class Test_PASDDSParser(unittest.TestCase):
     def setUp(self):
         self.ddsParser = PASDDSObjectParser()
         self.objReader = PASObjReader()
+        set_debug_flags(DEBUG_DDS_OPT_PARSING)
 
     def test_readFile(self):
         with self.assertRaises(PASDDSFileReadingException) as exception:
@@ -151,7 +152,7 @@ class Test_PASDDSParser(unittest.TestCase):
         with self.assertRaises(IndexError) as exception:
             self.ddsParser.getData(6)
 
-        self.ddsParser.removeDataId(0)
+        self.ddsParser.removeDataAtId("20000")
         self.assertEqual(self.ddsParser.nbDataId(), 5)
 
 
@@ -170,6 +171,18 @@ class Test_PASDDSParser(unittest.TestCase):
         data_3 = self.ddsParser.getData(3)
         self.assertEqual(data_3, "0D 00 0300 48 00 0000 2C01 0000 00 00 00 00 0000 0000")
         self.assertEqual(self.ddsParser.getId(3), "20003")
+        self.ddsParser.setDataAtId("20003", "FD 00 0300 48 00 0E00 2C01 0000 00 A1 00 00 0000 0000")
+        data_3 = self.ddsParser.getData(3)
+        self.assertEqual(data_3,            "FD 00 0300 48 00 0E00 2C01 0000 00 A1 00 00 0000 0000")
+
+        with self.assertRaises(ValueError) as exception:
+            self.ddsParser.setDataAtId("200F3", "FD 00 0300 48 00 0E00 2C01 0000 00 A1 00 00 0000 0000")
+
+
+        with self.assertRaises(PASDDSFileReadingException) as exception:
+            self.ddsParser.setDataAtId("20003", "FD 00 0300 48 00 0E00 2C01 0000 00 A1 00 00 000 0000")
+            self.assertEqual("Data is invalid :\nDATA     = {0}\nSPECTRUM = {1}".format("FD 00 0300 48 00 0E00 2C01 0000 00 A1 00 00 000 0000",
+                self.objReader["20003"].spectrum))
 
         data_4 = self.ddsParser.getData(4)
         self.assertEqual(data_4, "0D 06 0400 48 00 0000 0000 0000 08 00 00 00 0000 0000")

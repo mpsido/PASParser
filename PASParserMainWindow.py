@@ -18,7 +18,7 @@ from print_debug import *
 import ui_MainWindow
 
 
-set_debug_flags(DEBUG_FLAG_ADD_REMOVE_ELEMENTS | DEBUG_MMI)
+set_debug_flags(DEBUG_FLAG_ADD_REMOVE_ELEMENTS | DEBUG_MMI | DEBUG_DDS_OPT_PARSING)
 
 class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
     def __init__(self, parent=None):
@@ -81,7 +81,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         treeView.setColumnWidth(3, 100)
         treeView.clicked.connect(self.constructItemChildrenAndBrothers)
 
-        treeView.setContextMenuPolicy(Qt.CustomContextMenu)
+        treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         treeView.customContextMenuRequested.connect(self.slot_TreeView_customContextMenuRequested)
 
         tabIndex = self.tabWidget.addTab(treeView, shortPath)
@@ -105,7 +105,8 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         if model.rowCount(index) == 0 and model.isChildOfRoot(index):
             objectId = node.id
             fullPath = os.sep.join([path,objectId])
-            self.ddsParser[path] = PASDDSParser()
+            if path not in self.ddsParser:
+                self.ddsParser[path] = PASDDSParser()
             self.ddsParser[path].parse(path, objectId)
 
             for i in range(0, self.ddsParser[path].getNbObjects(objectId)):
@@ -156,6 +157,8 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
             self.ddsParser[path].setData(id, data)
             if node.nodeUpdated:
                 self.hasModifToSave[path] = True
+        if self.hasModifToSave[path] == False:
+            print_debug("Data at id {0} for path {1} was not modified".format(id, path), DEBUG_MMI)
 
     @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex) # signal with arguments
     def repaintViews(self, index, indexEnd):
@@ -184,16 +187,38 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
                 contextMenu.exec_(self.treeView[path].mapToGlobal(point))
 
     def item_addAction(self):
-        print_debug("Add {0}".format(self.actionNode.id), DEBUG_MMI)
+        print_debug("PASParserMainWindow.item_addAction Add after {0}".format(self.actionNode.id), DEBUG_MMI)
+        tabIndex = self.tabWidget.currentIndex()
         path = str(self.tabWidget.tabToolTip(tabIndex))
-        actionId = int(self.actionNode.id, 16)
-        self.objReader[path].addIndexToObject(str(actionId + 1), self.actionNode.id)
-        #TODO before... read the already existing object
+        actionId = int(self.actionNode.id, 16) + 1
+        newId = hex(actionId)[2:]
+        print_debug("PASParserMainWindow.item_addAction newId = {0}".format(newId), DEBUG_MMI)
+        try:
+            parsedObj = self.objReader[path].addIndexToObject(newId, self.actionNode.id)
+        except PASParsingException as exception:
+            print_debug(exception.message, DEBUG_MMI)
+        except:
+            print_debug("Unexpected error: {0}".format(sys.exc_info()[0]), DEBUG_MMI)
+        else:
+            print_debug("PASParserMainWindow.item_addAction adding accepted", DEBUG_MMI)
+            self.ddsParser[path].appendDataId(self.actionNode.id, newId)
+            self.ddsParser[path].parse(path, self.actionNode.id)
+            self.ddsParser[path].parse(path, newId)
+            node = PASObjectNode(newId, '', '', '', parsedObj, self.model[path].root)
+            self.model[path].insertRow(self.actionIndex.row(), QtCore.QModelIndex())
+            self.hasModifToSave[path] = True
+
 
 
     def item_removeAction(self):
         print_debug("Remove {0}".format(self.actionNode.id), DEBUG_MMI)
+        tabIndex = self.tabWidget.currentIndex()
         path = str(self.tabWidget.tabToolTip(tabIndex))
+        actionId = int(self.actionNode.id, 16)
+        parsedObj = self.objReader[path].removeIndexAt(self.actionNode.id)
+        self.ddsParser[path].removeDataAtId(self.actionNode.id)
+        self.model[path].removeRow(self.actionIndex.row(), QtCore.QModelIndex())
+        self.hasModifToSave[path] = True
 
 
     @QtCore.pyqtSlot(QtCore.QString) # signal with arguments
@@ -208,8 +233,9 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
     def closeTab(self, tabIndex):
         path = str(self.tabWidget.tabToolTip(tabIndex))
         if path in self.hasModifToSave and self.hasModifToSave[path]:
-          bSave = QMessageBox.question(self, tr("Save"), tr("Do you want to save data in path {0} before leaving ?").format(path), QMessageBox.Yes | QMessageBox.No)
-          if bSave == QMessageBox.Yes:
+          bSave = QtGui.QMessageBox.question(self, tr("Save"), tr("Do you want to save data in path {0} before leaving ?").format(path),
+                    QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+          if bSave == QtGui.QMessageBox.Yes:
               for path,ddsParser in self.ddsParser.items():
                   ddsParser.write()
         self.tabWidget.removeTab(tabIndex)
@@ -230,14 +256,11 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
             self.closeTab(0)
         print("Bye bye")
 
-    def main(self):
-        self.show()
-
 
 
 
 if __name__=='__main__':
     app = QtGui.QApplication(sys.argv)
     pasParserMainWindow = PASParserMainWindow()
-    pasParserMainWindow.main()
+    pasParserMainWindow.show()
     app.exec_()

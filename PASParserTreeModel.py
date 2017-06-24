@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import QT_TR_NOOP as tr
 
 from PASParsedObject import *
@@ -19,7 +18,7 @@ from PASObjectNode import *
 )=range(5)
 
 
-class PASParserTreeModel(QAbstractItemModel):
+class PASParserTreeModel(QtCore.QAbstractItemModel):
 
     def __init__(self, parent=None):
         super(PASParserTreeModel, self).__init__(parent)
@@ -32,17 +31,17 @@ class PASParserTreeModel(QAbstractItemModel):
 
 
     def flags(self, index):
-        flags = QAbstractItemModel.flags(self, index)
+        flags =QtCore.QAbstractItemModel.flags(self, index)
         node = self.nodeFromIndex(index)
         if index.column() == eValue and (node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT or
             (node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT and len(node) == 0)):
-            flags |= Qt.ItemIsEditable
+            flags |= QtCore.Qt.ItemIsEditable
         return flags
 
     def headerData(self, section, orientation, role):
-        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return QVariant(self.headers[section])
-        return QVariant()
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+            return QtCore.QVariant(self.headers[section])
+        return QtCore.QVariant()
 
     def insertRow(self, row, parent):
         return self.insertRows(row, 1, parent)
@@ -72,12 +71,12 @@ class PASParserTreeModel(QAbstractItemModel):
         if row < len(node):
             return self.createIndex(row, column, node.childAtRow(row))
         else:
-            return QModelIndex()
+            return QtCore.QModelIndex()
 
 
-    def setData(self, index, value, role = Qt.EditRole):
+    def setData(self, index, value, role = QtCore.Qt.EditRole):
         success = False
-        if role == Qt.EditRole:
+        if role == QtCore.Qt.EditRole:
             node = self.nodeFromIndex(index)
             if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
                 dataBefore = node.pasTypeOrObject.value
@@ -102,48 +101,48 @@ class PASParserTreeModel(QAbstractItemModel):
         return success
 
     def data(self, index, role):
-        if role == Qt.DecorationRole:
-            return QVariant()
+        if role == QtCore.Qt.DecorationRole:
+            return QtCore.QVariant()
 
-        if role == Qt.TextAlignmentRole:
-            return QVariant(int(Qt.AlignTop | Qt.AlignLeft))
+        if role == QtCore.Qt.TextAlignmentRole:
+            return QtCore.QVariant(int(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft))
 
-        if role == Qt.FontRole:
+        if role == QtCore.Qt.FontRole:
             node = self.nodeFromIndex(index)
             if node.nodeUpdated == True:
-                font = QFont()
+                font = QtGui.QFont()
                 font.setBold(True)
                 return font
             else:
-                return QVariant()
+                return QtCore.QVariant()
 
-        if role != Qt.DisplayRole:
-            return QVariant()
+        if role != QtCore.Qt.DisplayRole:
+            return QtCore.QVariant()
 
         node = self.nodeFromIndex(index)
 
         if index.column() == eId:
-            return QVariant(node.id)
+            return QtCore.QVariant(node.id)
 #        elif index.column() == eObjectName:
-#            return QVariant(node.eObjectName)
+#            return QtCore.QVariant(node.eObjectName)
         elif index.column() == eRange:
-                return QVariant(node.rangeOrObjectName)
+                return QtCore.QVariant(node.rangeOrObjectName)
         elif index.column() == eSize:
-            return QVariant(node.size)
+            return QtCore.QVariant(node.size)
         elif index.column() == eNbElements:
             if node.typeOfNode == ENUM_TYPE_NODE_OBJECT:
-                return QVariant(node.pasTypeOrObject.objectCount)
+                return QtCore.QVariant(node.pasTypeOrObject.objectCount)
             else:
-                return QVariant(node.nb_elements)
+                return QtCore.QVariant(node.nb_elements)
         elif index.column() == eValue:
             if node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
-                return QVariant(node.pasTypeOrObject.value)
+                return QtCore.QVariant(node.pasTypeOrObject.value)
             elif node.typeOfNode == ENUM_TYPE_NODE_ARRAY_ITEM_IN_OBJECT:
-                return QVariant( node.pasTypeOrObject[node.parent.rowOfChild(node)] )
+                return QtCore.QVariant( node.pasTypeOrObject[node.parent.rowOfChild(node)] )
             else:
-                return QVariant()
+                return QtCore.QVariant()
         else:
-            return QVariant()
+            return QtCore.QVariant()
 
 
     def columnCount(self, parent):
@@ -159,28 +158,28 @@ class PASParserTreeModel(QAbstractItemModel):
 
     def parent(self, child):
         if not child.isValid():
-            return QModelIndex()
+            return QtCore.QModelIndex()
 
         node = self.nodeFromIndex(child)
 
         if node is None:
-            return QModelIndex()
+            return QtCore.QModelIndex()
 
         parent = node.parent
 
         if parent is None:
-            return QModelIndex()
+            return QtCore.QModelIndex()
 
         grandparent = parent.parent
         if grandparent is None:
-            return QModelIndex()
+            return QtCore.QModelIndex()
         row = grandparent.rowOfChild(parent)
 
         assert row != - 1
         return self.createIndex(row, 0, parent)
 
     def isChildOfRoot(self, index):
-        return self.parent(index) == QModelIndex()
+        return self.parent(index) == QtCore.QModelIndex()
 
     def nodeFromIndex(self, index):
         return index.internalPointer() if index.isValid() else self.root
