@@ -34,8 +34,9 @@ class Test_PASDDSParser(unittest.TestCase):
         self.assertEqual(self.ddsParser.fileName, "74000")
         self.assertEqual(self.ddsParser.filePath, "tests/files/74000")
 
+#        print (self.ddsParser.iniBlockNames)
+
         self.assertEqual(len(self.ddsParser.sections()), 6)
-        print (self.ddsParser.iniBlockNames)
         self.assertListEqual(self.ddsParser.iniBlockNames, ['[ENTETE]', '[MPE_PARAMETERS]', '[PAS_OD_WRITE]', '[PAS_SDO_SEND_DIRECT]',
         '[PAS_PDO_SEND]', '[PAS_SDO_SEND_DIRECT]'])
 
@@ -59,7 +60,7 @@ class Test_PASDDSParser(unittest.TestCase):
         self.assertEqual(data_74000,
             '04 00 606D0C006054D052584D50463863580260096400D00764006400F40101010104 00A41011301068ABE000')
 
-        with  self.assertRaises(PASDDSFileReadingException) as exception:
+        with self.assertRaises(PASDDSFileReadingException) as exception:
             wrong_data = "0201AF"
             self.ddsParser.setData(wrong_data)
 
