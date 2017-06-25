@@ -3,7 +3,6 @@
 
 import os
 import re
-import ConfigParser
 from print_debug import *
 from PASParsedObjectContainer import *
 
@@ -37,7 +36,6 @@ class INIBlock:
 
     def setNextBlock(self, iniNextBlock):
         self._nextBlock = iniNextBlock
-        self._previousBlock = iniNextBlock._previousBlock
         iniNextBlock._previousBlock = self
 
 
@@ -82,14 +80,20 @@ class PASDDSObjectParser:
         # iterates self.iniBlocks (type INIBlock)
         self.currentBlock = self.firstBlock
         print_debug("Init: {0}".format(self.currentBlock.name), DEBUG_DDS_OPT_PARSING)
+        self.bIterating = True
         return self
 
     def next(self):
-        if self.currentBlock.nextBlock() is self.currentBlock:
+#        raise KeyError( "next")
+        if self.bIterating == False:
             raise StopIteration()
+        currentBlock = self.currentBlock
+        print_debug("Next: {0}".format(self.currentBlock.name), DEBUG_DDS_OPT_PARSING)
+        if self.currentBlock.nextBlock() is self.currentBlock:
+            self.bIterating = False
         else:
             self.currentBlock = self.currentBlock.nextBlock()
-        return self.currentBlock
+        return currentBlock
 
     def __repr__(self):
         """Constructs the full file text content"""
@@ -197,7 +201,11 @@ class PASDDSObjectParser:
                     optionValue = "{0:>08} 0000".format(newId)
                 iniBlock.addItem(optionName, optionValue)
 
-            iniBlock.previousBlock().setNextBlock(iniBlock)
+            if len(self._PAS_OD_WRITE_Blocks) > 0:
+                self._PAS_OD_WRITE_Block[-1].setNextBlock(iniBlock)
+            else:
+                self.blockBeforePAS_OD_WRITE.setNextBlock(iniBlock)
+
             self._PAS_OD_WRITE_Blocks.append(iniBlock) #TODO test list _PAS_OD_WRITE_Blocks a little bit better in automatic tests
             self._objectIdsList.append(newId)
 
@@ -235,7 +243,7 @@ class PASDDSObjectParser:
 
     def _parseBlocks(self):
         blocksSeparator = re.compile("^(?:\s*)\[.*\](?:\s*)$", flags = re.MULTILINE)
-        self.iniBlockNames = [blockName for blockName in blocksSeparator.findall(fileTextContent)]
+        self.iniBlockNames = [blockName for blockName in blocksSeparator.findall(self.fileTextContent)]
 
         self.iniBlockTexts = [ block.lstrip() for block in  blocksSeparator.split(self.fileTextContent) ]
         if self.iniBlockTexts[0].lstrip() == '':
@@ -276,6 +284,8 @@ class PASDDSObjectParser:
 
         self._PAS_OD_WRITE_Blocks = [block for block in self.iniBlocks if block.name == "[PAS_OD_WRITE]"]
         self._objectIdsList = [ self.getId(i) for i in range(0, self.nbDataId()) ]
+
+        self.blockBeforePAS_OD_WRITE = self._PAS_OD_WRITE_Blocks[0].previousBlock()
 
 
 class PASDDSParser:
