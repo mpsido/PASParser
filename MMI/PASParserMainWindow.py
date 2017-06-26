@@ -154,7 +154,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         node = self.model[path].nodeFromIndex(index)
         id = node.pasTypeOrObject.objectIndex
         data = self.pasObjContainer[path][id].dataString
-        if PASObjReader.isDataValid(id, data):
+        if XMLObjectReader.isDataValid(id, data):
             self.ddsParser[path].setData(id, data)
             if node.nodeUpdated:
                 self.hasModifToSave[path] = True

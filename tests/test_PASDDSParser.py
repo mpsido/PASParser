@@ -17,7 +17,7 @@ class Test_PASDDSParser(unittest.TestCase):
     def setUp(self):
         self.ddsParser = PASDDSObjectParser()
         self.pasObjContainer = PASParsedObjectContainer()
-        set_debug_flags(DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
+        set_debug_flags(0)
 
     def test_readFile(self):
         with self.assertRaises(PASDDSFileReadingException) as exception:
