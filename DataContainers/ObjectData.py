@@ -1,33 +1,87 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from XMLParsing.XMLParsedObject import *
+from DataContainers.TypeData import *
 
 from Common.print_debug import *
 from Common.PASParsingException import *
 import re
 
 
-class PASParsedObject(XMLParsedObject):
-    """Same as XMLParsedObject, but this class also stores data"""
+class ObjectData(object):
+    """Stores a PAS Object data"""
 
-    def __init__(self, objectIndex):
-        super(PASParsedObject, self).__init__()
+    def __init__(self, objectIndex, xmlParsedObject):
         self.dataString = ""
         self.formatedData = {}
         self.objectIndex = objectIndex
+        self.xmlParsedObject = xmlParsedObject
+
+
+        self.typeFields = []
+        if bool(xmlParsedObject):
+            for field in xmlParsedObject.fields:
+                self.typeFields.append(TypeData(field, self))
+
+    @property
+    def objectCount(self):
+        if bool(self.xmlParsedObject):
+            return self.xmlParsedObject.objectCount
+        else:
+            return 0
+
+    @property
+    def nbFields(self):
+        if bool(self.xmlParsedObject):
+            return self.xmlParsedObject.nbFields
+        else:
+            return 0
+
+    @property
+    def fields(self):
+        if bool(self.xmlParsedObject):
+            return self.xmlParsedObject.fields
+        else:
+            return []
+
+
+    @property
+    def objectName(self):
+        if bool(self.xmlParsedObject):
+            return self.xmlParsedObject.objectName
+        else:
+            return ""
+
+
+    @property
+    def spectrum(self):
+        if bool(self.xmlParsedObject):
+            return self.xmlParsedObject.spectrum
+        else:
+            return ""
+
+
+    def __setitem__(self, fieldId, newValue):
+        return self.modifyData(fieldId, newValue)
+
+    def __getitem__(self, fieldId):
+        if type(fieldId) is int:
+            dataField = self.typeFields[fieldId]
+        else:
+            dataField = [field for field in self.typeFields if field.nameOfField == fieldId][0]
+        return dataField
 
     def writeFormatedData(self, formatedData):
         """transforms the formated data "formatedData" back into raw string """
         self.dataString = ""
         cursor = 0
-        for field in self.fields:
+        for field in self.xmlParsedObject.fields:
             if field.arraySize == 1:
-                self.dataString += PASParsedObject.paddingString(field.range_[0], cursor)
+                self.dataString += self.xmlParsedObject.paddingString(field.range_[0], cursor)
                 self.dataString += formatedData[field.nameOfField] + " "
                 cursor = field.range_[1] + 1
             else:
-                self.dataString += PASParsedObject.paddingString(field.range_[0][0], cursor)
+                self.dataString += self.xmlParsedObject.paddingString(field.range_[0][0], cursor)
                 for i in range(0, field.arraySize):
                     self.dataString += formatedData[field.nameOfField][i] + " "
                 cursor = field.range_[-1][1] + 1
@@ -103,7 +157,7 @@ class PASParsedObject(XMLParsedObject):
         self.dataString = ""
 
         data = data.replace(' ','')
-        for field in self.fields:
+        for field in self.xmlParsedObject.fields:
             if field.arraySize == 1:
                 print_debug("{0}\t\t = {1}".format(field.nameOfField, data[2*field.range_[0]:2*(field.range_[1]+1)]), DEBUG_DATA_READING)
                 self.formatedData[field.nameOfField] = data[2*field.range_[0]:2*(field.range_[1]+1)]

@@ -7,7 +7,8 @@ from PyQt4.QtCore import QT_TR_NOOP as tr
 import sys
 import re
 import os
-from DataContainers.PASParsedObjectContainer import *
+from Common.print_debug import *
+from DataContainers.ObjectDataContainer import *
 from DDS.PASDDSParser import *
 from MMI.PASParserTreeModel import PASParserTreeModel,PASObjectNode
 from MMI.PASParserProxyModel import *
@@ -16,9 +17,6 @@ from MMI.SidePanelProxyModel import *
 from Common.print_debug import *
 
 import ui_MainWindow
-
-
-set_debug_flags(DEBUG_FLAG_ADD_REMOVE_ELEMENTS | DEBUG_MMI)
 
 class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
     def __init__(self, parent=None):
@@ -59,7 +57,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.pasDir.append(fullPath)
         shortPath = re.split(r'[/\\]', fullPath)[-1]
 
-        self.pasObjContainer[fullPath] = PASParsedObjectContainer()
+        self.pasObjContainer[fullPath] = ObjectDataContainer()
 
         model = PASParserTreeModel(self)
         model.dataChanged.connect(self.repaintViews)
@@ -91,7 +89,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         #find files whose name is a hexadecimal number
         indexes = filter(lambda x: re.match(r'^[0-9A-Fa-f]+$', x), os.listdir(fullPath))
         for id in indexes:
-            PASObjectNode(id, '', '', '', PASParsedObject(0), model.root)
+            PASObjectNode(id, '', '', '', ObjectData(0, None), model.root)
         model.insertRows(0, len(indexes), QtCore.QModelIndex())
 
 
@@ -154,7 +152,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         node = self.model[path].nodeFromIndex(index)
         id = node.pasTypeOrObject.objectIndex
         data = self.pasObjContainer[path][id].dataString
-        if XMLObjectReader.isDataValid(id, data):
+        if self.pasObjContainer [path].isDataValid(id, data):
             self.ddsParser[path].setData(id, data)
             if node.nodeUpdated:
                 self.hasModifToSave[path] = True

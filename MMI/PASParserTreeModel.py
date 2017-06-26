@@ -4,7 +4,7 @@
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import QT_TR_NOOP as tr
 
-from DataContainers.PASParsedObject import *
+from DataContainers.ObjectData import *
 from MMI.PASObjectNode import *
 
 #eColumnNumbers = enum

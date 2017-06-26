@@ -2,7 +2,7 @@
 from XMLParsedTypeInObject import *
 
 
-class XMLParsedObject(object):
+class XMLParsedObject():
     """This class is a container for XMLParsedTypeInObject objects, it constructs them and store them"""
 
     def __init__(self):
@@ -53,21 +53,11 @@ class XMLParsedObject(object):
             description += "data     :     {0}".format(self.writeFormatedData(self.formatedData))
         return description
 
-    def __setitem__(self, fieldId, newValue):
-        return self.modifyData(fieldId, newValue)
-
-    def __getitem__(self, fieldId):
-        if type(fieldId) is int:
-            dataField = self.fields[fieldId]
-        else:
-            dataField = [field for field in self.fields if field.nameOfField == fieldId][0]
-        return dataField
-
     def addField(self, nameOfField, typeName, start_pos, size, arraySize):
         """Adds a field in this parsed object """
-        parsedType = XMLParsedTypeInObject()
-        parsedType.setInfos(self.startIndex, nameOfField, typeName, start_pos, size, arraySize, self)
-        self.fields.append(parsedType)
+        xmlParsedType = XMLParsedTypeInObject()
+        xmlParsedType.setInfos(self.startIndex, nameOfField, typeName, start_pos, size, arraySize)
+        self.fields.append(xmlParsedType)
 
     def nbFields(self):
         return len(self.fields)

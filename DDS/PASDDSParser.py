@@ -4,7 +4,7 @@
 import os
 import re
 from Common.print_debug import *
-from DataContainers.PASParsedObjectContainer import *
+from XMLParsing.XMLObjectReader import *
 
 
 class PASDDSFileReadingException(Exception):
@@ -35,8 +35,9 @@ class INIBlock:
 
 
     def setNextBlock(self, iniNextBlock):
-        self._nextBlock = iniNextBlock
         iniNextBlock._previousBlock = self
+#        iniNextBlock._nextBlock = self._nextBlock
+        self._nextBlock = iniNextBlock
 
 
     def __repr__(self):
@@ -74,6 +75,7 @@ class PASDDSObjectParser:
         self._PAS_OD_WRITE_Blocks = []
         self._objectIdsList = []
         self.bFileParsed = False
+        self.xmlObjectReader = XMLObjectReader()
 
     def __iter__(self):
         """Initializes iteration, this object iterates iniBlocks"""
@@ -115,7 +117,7 @@ class PASDDSObjectParser:
         path = os.sep.join(pathInfo[:-1])
 
         if os.path.isfile(filePath) == False:
-            fileName = XMLObjectReader.getStartIndexFromObjectIndex(fileName)
+            fileName = self.xmlObjectReader.getStartIndexFromObjectIndex(fileName)
             filePath = os.sep.join([path,fileName])
 
         if os.path.isfile(filePath) == False:
@@ -202,9 +204,13 @@ class PASDDSObjectParser:
                 iniBlock.addItem(optionName, optionValue)
 
             if len(self._PAS_OD_WRITE_Blocks) > 0:
-                self._PAS_OD_WRITE_Block[-1].setNextBlock(iniBlock)
+                iniBlock.setNextBlock(self._PAS_OD_WRITE_Blocks[-1].nextBlock())
+                self._PAS_OD_WRITE_Blocks[-1].setNextBlock(iniBlock)
             else:
+                iniBlock.setNextBlock(self.blockBeforePAS_OD_WRITE.nextBlock())
                 self.blockBeforePAS_OD_WRITE.setNextBlock(iniBlock)
+
+
 
             self._PAS_OD_WRITE_Blocks.append(iniBlock) #TODO test list _PAS_OD_WRITE_Blocks a little bit better in automatic tests
             self._objectIdsList.append(newId)
@@ -231,11 +237,11 @@ class PASDDSObjectParser:
     def setDataAtId(self, objectId, newValue):
         offset = self._objectIdsList.index(objectId)
 
-        if XMLObjectReader.isDataValid(objectId, newValue):
+        if self.xmlObjectReader.isDataValid(objectId, newValue):
             self._setData(newValue, offset)
         else:
             raise PASDDSFileReadingException("Data is invalid :\nDATA     = {0}\nSPECTRUM = {1}".format(newValue,
-                    XMLObjectReader.spectrums[XMLObjectReader.getStartIndexFromObjectIndex(self.fileName)]))
+                    self.xmlObjectReader.spectrum(self.fileName) ))
 
     def _setData(self, newValue, offset = 0):
         self._PAS_OD_WRITE_Blocks[offset]['DATA'] = newValue
@@ -272,7 +278,7 @@ class PASDDSObjectParser:
                     print_debug("OPT {0} : {1}".format(optName, optValue), DEBUG_DDS_OPT_PARSING)
                     iniBlock.addItem(optName, optValue)
 
-            print_debug("Block: {0}".format(iniBlock.name), DEBUG_DDS_OPT_PARSING)
+            print_debug("Block: '{0}'".format(iniBlock.name), DEBUG_DDS_OPT_PARSING)
             if bFirstBlock:
                 self.firstBlock = iniBlock
                 previousBlock = iniBlock
@@ -285,7 +291,8 @@ class PASDDSObjectParser:
         self._PAS_OD_WRITE_Blocks = [block for block in self.iniBlocks if block.name == "[PAS_OD_WRITE]"]
         self._objectIdsList = [ self.getId(i) for i in range(0, self.nbDataId()) ]
 
-        self.blockBeforePAS_OD_WRITE = self._PAS_OD_WRITE_Blocks[0].previousBlock()
+        if len(self._PAS_OD_WRITE_Blocks) > 0:
+            self.blockBeforePAS_OD_WRITE = self._PAS_OD_WRITE_Blocks[0].previousBlock()
 
 
 class PASDDSParser:

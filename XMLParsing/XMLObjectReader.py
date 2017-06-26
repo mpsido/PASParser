@@ -2,44 +2,52 @@
 # -*- coding: utf-8 -*-
 
 """
-The purpose of this module is to construct a class providing tools read DATA field of a given PAS object 
+The purpose of this module is to construct a class providing tools read DATA field of a given PAS object
 This class uses object definitions from OD.xml and OD_types.xml files
 """
 
 import re
+from Common.Singleton import *
 from PASType import *
 from lxml import etree
 from XMLParsing.XMLParsedObject import *
 from Common.print_debug import *
 
 
+
+@Singleton
 class XMLObjectReader:
     """
     This class parses OD.xml file to prepare object parsing
     """
     #define class attributes
-    OD = etree.parse("OD.xml")
-    typeReader = PASTypeReader()
-    _PASObjXMLDict = {}     #see readObjects documentation
-    _objectIndexRanges = [] #list of tuple for getStartIndexFromObjectIndex function
-    PASObjectsString = ""   #see readObjects documentation
-    spectrums = {}
-    _XMLParsedObjects = {}  #dict of XMLParsedObject each call of xmlParseObject function adds an object in it (if not already there)
 
-    @classmethod
-    def isDataValid(XMLObjectReader, objectId, data):
-        objectId = XMLObjectReader.getStartIndexFromObjectIndex(objectId)
-        if objectId not in XMLObjectReader.spectrums:
-            xmlParsedObject = XMLParsedObject()
-            XMLObjectReader.xmlParseObject(xmlParsedObject, objectId)
-            XMLObjectReader._XMLParsedObjects[objectId] = xmlParsedObject
-        if XMLObjectReader.spectrums[objectId] == "" or XMLObjectReader.spectrums[objectId] == "Empty Spectrum":
+    def __init__(self):
+        self.OD = etree.parse("OD.xml")
+        self.typeReader = PASTypeReader()
+        self._PASObjXMLDict = {}     #see _readObjects documentation
+        self._objectIndexRanges = [] #list of tuple for getStartIndexFromObjectIndex function
+        self.PASObjectsString = ""   #see _readObjects documentation
+        self._XMLParsedObjects = {}  #dict of XMLParsedObject each call of xmlParseObject function adds an object in it (if not already there)
+        self._readObjects()
+
+
+    def __getitem__(self, startIndex):
+        return self._XMLParsedObjects[self.getStartIndexFromObjectIndex(startIndex)]
+
+    def isDataValid(self, objectId, data):
+        objectId = self.getStartIndexFromObjectIndex(objectId)
+        if objectId not in self._XMLParsedObjects:
+            xmlParsedObject = self.xmlParseObject(objectId)
+            self._XMLParsedObjects[objectId] = xmlParsedObject
+        spectrum = self._XMLParsedObjects[objectId].spectrum
+        if spectrum == "" or spectrum == "Empty Spectrum":
             print("This Object was not correctly parsed")
             return False
         while data.endswith(' '):
            data = data[:-1]
 
-        if len(data) != len(XMLObjectReader.spectrums[objectId]):
+        if len(data) != len(spectrum):
             print_debug("len(data) != len(spectrum)", DEBUG_DATA_CHECK)
             return False
 
@@ -47,7 +55,7 @@ class XMLObjectReader:
         regexBase = "(?:[0-9]|[a-fA-F])"
         regexString = ""
         cursor = 0
-        for field in XMLObjectReader.spectrums[objectId].split(' '):
+        for field in spectrum.split(' '):
             regexString += "(?:" + regexBase + "){" + "{0}".format(len(field)) + "} "
 
         while regexString.endswith(' '):
@@ -58,8 +66,8 @@ class XMLObjectReader:
 
         return regMatch.match(data) is not None
 
-    @classmethod
-    def readObjects(XMLObjectReader):
+
+    def _readObjects(self):
         """
         Reads OD.xml file and "
         initializes _PASObjXMLDict, _objectIndexRanges and PASObjectsString
@@ -70,15 +78,15 @@ class XMLObjectReader:
         - _PASObjXMLDict is a list of xml node objects we are gonna need later when parsing object content through 'xmlParseObject' function
         """
         elts = ""
-        if len(XMLObjectReader.PASObjectsString) > 0:
-            print_debug("XMLObjectReader.readObjects PASObjectsString={0}".format(XMLObjectReader.PASObjectsString), DEBUG_DATA_READING)
-            elts = XMLObjectReader.PASObjectsString
+        if len(self.PASObjectsString) > 0:
+            print_debug("self._readObjects PASObjectsString={0}".format(self.PASObjectsString), DEBUG_DATA_READING)
+            elts = self.PASObjectsString
         else:
-            for elt in XMLObjectReader.OD.findall("group/object"):
+            for elt in self.OD.findall("group/object"):
                 elt_id = elt.get('start_index').lower()
                 if re.match(r'0x[0-9A-Fa-f]+', elt_id) is not None:
                     elt_int_id = elt_id[2:]
-                    XMLObjectReader._PASObjXMLDict[elt_int_id] = elt
+                    self._PASObjXMLDict[elt_int_id] = elt
 
                     if elt.find('count') is not None:
                         count = int(elt.find('count').get('value'))
@@ -86,15 +94,15 @@ class XMLObjectReader:
                     else:
                         count = 1
 
-                    XMLObjectReader._objectIndexRanges.append( (int(elt_int_id,16), int(elt_int_id,16) + count))
-                    print_debug("Range : {0} to {1}".format(XMLObjectReader._objectIndexRanges[-1][0], XMLObjectReader._objectIndexRanges[-1][1], DEBUG_FLAG_ADD_REMOVE_ELEMENTS))
+                    self._objectIndexRanges.append( (int(elt_int_id,16), int(elt_int_id,16) + count))
+                    print_debug("Range : {0} to {1}".format(self._objectIndexRanges[-1][0], self._objectIndexRanges[-1][1], DEBUG_FLAG_ADD_REMOVE_ELEMENTS))
 
                     elts += elt.get('name') + " " + str(elt_id) + "\n"
                 else:
                     print_debug("start_index id={0} is not in format 0x[0-9A-Fa-f]+".format(elt_id+ " "), DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
             if elts.endswith('\n'):
                 elts = elts[:-1]
-            XMLObjectReader.PASObjectsString = elts
+            self.PASObjectsString = elts
         return elts
 
     @staticmethod
@@ -105,33 +113,43 @@ class XMLObjectReader:
         print_debug("Padding {0} at position {1} equals {2}".format(dataPadding, position, padding), DEBUG_FLAG_PADDING)
         return padding
 
-    @classmethod
-    def _initParsedObjectAtIndex(XMLObjectReader, parsedObject, startIndex):
-        parsedObject.groupName = XMLObjectReader._XMLParsedObjects[startIndex].groupName
-        parsedObject.objectName = XMLObjectReader._XMLParsedObjects[startIndex].objectName
-        parsedObject.startIndex = XMLObjectReader._XMLParsedObjects[startIndex].startIndex
-        parsedObject.objectCount = XMLObjectReader._XMLParsedObjects[startIndex].objectCount
-        parsedObject.fields = XMLObjectReader._XMLParsedObjects[startIndex].fields
-        parsedObject.spectrum = XMLObjectReader._XMLParsedObjects[startIndex].spectrum
+    def _initParsedObjectAtIndex(self, parsedObject, startIndex):
+        parsedObject.groupName = self._XMLParsedObjects[startIndex].groupName
+        parsedObject.objectName = self._XMLParsedObjects[startIndex].objectName
+        parsedObject.startIndex = self._XMLParsedObjects[startIndex].startIndex
+        parsedObject.objectCount = self._XMLParsedObjects[startIndex].objectCount
+        parsedObject.fields = self._XMLParsedObjects[startIndex].fields
+        parsedObject.spectrum = self._XMLParsedObjects[startIndex].spectrum
 
 
-    @classmethod
-    def xmlParseObject(XMLObjectReader, parsedObject, objectId):
+
+    def xmlParseObject(self, objectId):
         """
-        Parses 'xmlNode' in order to fill the given 'parsedObject' with data attributes contained in OD.xml
-        The XMLParsedObject object's objectId given will be set to 'objectId'
-        returns the constructed XMLParsedObject object
+        Parses 'xmlNode' in order to construct a XMLParsedObject using data attributes contained in OD.xml
+
+        Constructs an arborescence of the types contained in this object using the data in self.typeReader
+        Calculates the position of each typed field in the final DATA representing this object
+
+        Also constructs the spectrum of this object
+        The "spectrum" is presentation of the way data of this type are presented in the file inside .dds export
+        (file whose name is object's start_index)
+        Example : aaaa 00 bb
+        00 = padding
+        [a-z] = data (two successive data are named with a different letter)
+
+        Returns the constructed XMLParsedObject object
         """
 
-        startIndex = XMLObjectReader.getStartIndexFromObjectIndex(objectId)
-        if startIndex in XMLObjectReader._XMLParsedObjects:
-            XMLObjectReader._initParsedObjectAtIndex(parsedObject, startIndex)
+        startIndex = self.getStartIndexFromObjectIndex(objectId)
+        if startIndex in self._XMLParsedObjects:
+            parsedObject = self._XMLParsedObjects[startIndex]
         else:
             letters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
             spectrum = ""
             l = 0
             byteNumber = 0
-            xmlNode = XMLObjectReader._PASObjXMLDict[startIndex]
+            xmlNode = self._PASObjXMLDict[startIndex]
+            parsedObject = XMLParsedObject()
             parsedObject.groupName = xmlNode.getparent().get('name')
             parsedObject.objectName = xmlNode.get('name')
             parsedObject.startIndex = xmlNode.get('start_index')[2:]
@@ -148,10 +166,10 @@ class XMLObjectReader:
                 nameOfField = typeNode.get('name')
                 typeName = typeNode.get('type')
                 count = int(typeNode.get('count')) #longueur du tableau
-                pasType = XMLObjectReader.typeReader.PASTypesDict[typeName]
+                pasType = self.typeReader.PASTypesDict[typeName]
                 print_debug("DATA {4}:Type {0} size {1} count {2} padding {3}"
                     .format(typeName, pasType.size, count, pasType.padding, letters[l]), DEBUG_FLAG_PADDING)
-                padding = XMLObjectReader.calculatePadding(byteNumber, pasType.padding)
+                padding = self.calculatePadding(byteNumber, pasType.padding)
 
                 #add padding
                 for j in range (0, padding):
@@ -171,23 +189,32 @@ class XMLObjectReader:
                 l += 1
             if spectrum.endswith(' '):
                 spectrum = spectrum[:-1]
-            XMLObjectReader.spectrums[startIndex] = spectrum
+
             parsedObject.spectrum = spectrum
 
-    @classmethod
-    def objectExist(XMLObjectReader, objectId):
-        return XMLObjectReader.getStartIndexFromObjectIndex(objectId) in XMLObjectReader._PASObjXMLDict
+            self._XMLParsedObjects[startIndex] = parsedObject
 
-    @classmethod
-    def getStartIndexFromObjectIndex(XMLObjectReader, objectIndex):
+        return parsedObject
+
+
+
+    def spectrum(self, objectId):
+        return self[self.getStartIndexFromObjectIndex(objectId)].spectrum
+
+
+    def objectExist(self, objectId):
+        return self.getStartIndexFromObjectIndex(objectId) in self._PASObjXMLDict
+
+
+    def getStartIndexFromObjectIndex(self, objectIndex):
         try:
             objIdx = int(objectIndex, 16)
         except ValueError:
             return "Invalid index"
         else:
-            startIndexList = [idx for idx,end in XMLObjectReader._objectIndexRanges if objIdx >= idx and objIdx < end]
+            startIndexList = [idx for idx,end in self._objectIndexRanges if objIdx >= idx and objIdx < end]
             if len(startIndexList) > 1:
-                raise PASParsingException("XMLObjectReader.getStartIndexFromObjectIndex {0}".format([ hex(index) for index in  startIndexList] ))
+                raise PASParsingException("self.getStartIndexFromObjectIndex {0}".format([ hex(index) for index in  startIndexList] ))
             if len(startIndexList) == 0:
                 return "Invalid index"
             else:

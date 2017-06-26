@@ -11,12 +11,12 @@ sys.path.append(lib_path)
 import unittest
 
 from DDS.PASDDSParser import *
-from DataContainers.PASParsedObjectContainer import *
+from DataContainers.ObjectDataContainer import *
 
 class Test_PASDDSParser(unittest.TestCase):
     def setUp(self):
         self.ddsParser = PASDDSObjectParser()
-        self.pasObjContainer = PASParsedObjectContainer()
+        self.pasObjContainer = ObjectDataContainer()
         set_debug_flags(0)
 
     def test_readFile(self):

@@ -9,13 +9,13 @@ lib_path = os.path.abspath('.')
 sys.path.append(lib_path)
 
 import unittest
-from DataContainers.PASParsedObjectContainer import *
+from DataContainers.ObjectDataContainer import *
 #from print_debug import *
 
 
-class Test_PASParsedObjectContainer(unittest.TestCase):
+class Test_ObjectDataContainer(unittest.TestCase):
     def setUp(self):
-        self.pasObjContainer = PASParsedObjectContainer()
+        self.pasObjContainer = ObjectDataContainer()
         set_debug_flags(0)
 
     def test_10000(self):
@@ -299,24 +299,24 @@ class Test_PASParsedObjectContainer(unittest.TestCase):
     def test_isDataValid(self):
         self.pasObjContainer.parseObject("74000")
 
-        self.assertTrue(XMLObjectReader.isDataValid("74000", "02 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
-        self.assertTrue(XMLObjectReader.isDataValid("74000", "02 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
-        self.assertTrue(XMLObjectReader.isDataValid("74000", "02 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABEDC0"))
-        self.assertTrue(XMLObjectReader.isDataValid("74000", "af 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
+        self.assertTrue(self.pasObjContainer._objectXmlReader.isDataValid("74000", "02 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
+        self.assertTrue(self.pasObjContainer._objectXmlReader.isDataValid("74000", "02 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
+        self.assertTrue(self.pasObjContainer._objectXmlReader.isDataValid("74000", "02 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABEDC0"))
+        self.assertTrue(self.pasObjContainer._objectXmlReader.isDataValid("74000", "af 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
 
         #too long
-        self.assertFalse(XMLObjectReader.isDataValid("74000", "0200 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
+        self.assertFalse(self.pasObjContainer._objectXmlReader.isDataValid("74000", "0200 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
 
         #wrong spaces
-        self.assertFalse(XMLObjectReader.isDataValid("74000", "02 00  6D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
-        self.assertFalse(XMLObjectReader.isDataValid("74000", "02 00 6D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000 "))
+        self.assertFalse(self.pasObjContainer._objectXmlReader.isDataValid("74000", "02 00  6D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
+        self.assertFalse(self.pasObjContainer._objectXmlReader.isDataValid("74000", "02 00 6D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000 "))
 
         #not hexadecimal
-        self.assertFalse(XMLObjectReader.isDataValid("74000", "hg 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
+        self.assertFalse(self.pasObjContainer._objectXmlReader.isDataValid("74000", "hg 00 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
 
         #fiels are badly positioned
-        self.assertFalse(XMLObjectReader.isDataValid("74000", "021 0 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
-        self.assertFalse(XMLObjectReader.isDataValid("74000", "02 00 06D0C006054D052584D50463863580260096400D00764003200640001010104 500A41011301068ABE000"))
+        self.assertFalse(self.pasObjContainer._objectXmlReader.isDataValid("74000", "021 0 606D0C006054D052584D50463863580260096400D00764003200640001010104 00A41011301068ABE000"))
+        self.assertFalse(self.pasObjContainer._objectXmlReader.isDataValid("74000", "02 00 06D0C006054D052584D50463863580260096400D00764003200640001010104 500A41011301068ABE000"))
 
 
     def test_addIndexes(self):
@@ -324,11 +324,11 @@ class Test_PASParsedObjectContainer(unittest.TestCase):
 
         with self.assertRaises(PASParsingException) as exception:
             self.pasObjContainer.addIndexToObject("20001", "212165")
-            self.assertEqual(exception.message == "PASParsedObjectContainer.addIndexToObject : start index 212165 do not exist")
+            self.assertEqual(exception.message == "ObjectDataContainer.addIndexToObject : start index 212165 do not exist")
 
         with self.assertRaises(PASParsingException) as exception:
             self.pasObjContainer.addIndexToObject("20000", "20000")
-            self.assertEqual(exception.message == "PASParsedObjectContainer.addIndexToObject : index 20000 already exists")
+            self.assertEqual(exception.message == "ObjectDataContainer.addIndexToObject : index 20000 already exists")
 
 
         with self.assertRaises(PASParsingException) as exception:
@@ -380,14 +380,14 @@ class Test_PASParsedObjectContainer(unittest.TestCase):
         self.pasObjContainer.removeIndexAt("20000") #remove source index
         with self.assertRaises(KeyError) as exception:
             self.pasObjContainer["20000"]
-            self.assertEqual(exception.message, "PASParsedObjectContainer.removeIndexAt : ObjectIndex 20000 do not exist, cannot remove it")
+            self.assertEqual(exception.message, "ObjectDataContainer.removeIndexAt : ObjectIndex 20000 do not exist, cannot remove it")
 
         # we should be able to add objects even if last object had been removed
         self.pasObjContainer.addIndexToObject("20004", "20000")
 
         with self.assertRaises(KeyError) as exception:
             self.pasObjContainer.removeIndexAt("20001")
-            self.assertEqual(exception.message, "PASParsedObjectContainer.removeIndexAt : ObjectIndex 20001 do not exist, cannot remove it")
+            self.assertEqual(exception.message, "ObjectDataContainer.removeIndexAt : ObjectIndex 20001 do not exist, cannot remove it")
 
         self.pasObjContainer.removeIndexAt("20004")
 
@@ -401,27 +401,27 @@ class Test_PASParsedObjectContainer(unittest.TestCase):
 
         with self.assertRaises(KeyError) as exception:
             self.pasObjContainer["20000"]
-            self.assertEqual(exception.message, "PASParsedObjectContainer.removeIndexAt : ObjectIndex 20000 do not exist, cannot remove it")
+            self.assertEqual(exception.message, "ObjectDataContainer.removeIndexAt : ObjectIndex 20000 do not exist, cannot remove it")
 
     def test_getStartIndexFromObjectIndex(self):
         self.pasObjContainer.parseObject("20000")
         self.assertEqual(self.pasObjContainer["20000"].objectCount, 2048)
 
-        self.assertEqual("20000", XMLObjectReader.getStartIndexFromObjectIndex("20045"))
-        self.assertEqual("20000", XMLObjectReader.getStartIndexFromObjectIndex("20111"))
-        self.assertEqual("20000", XMLObjectReader.getStartIndexFromObjectIndex("20000"))
-        self.assertEqual("20000", XMLObjectReader.getStartIndexFromObjectIndex("20799"))
-        self.assertEqual("20000", XMLObjectReader.getStartIndexFromObjectIndex("20047"))
+        self.assertEqual("20000", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("20045"))
+        self.assertEqual("20000", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("20111"))
+        self.assertEqual("20000", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("20000"))
+        self.assertEqual("20000", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("20799"))
+        self.assertEqual("20000", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("20047"))
 
 
-        self.assertEqual("Invalid index", XMLObjectReader.getStartIndexFromObjectIndex("20800"))
-#        self.assertEqual("Invalid index", XMLObjectReader.getStartIndexFromObjectIndex("74000"))
-        self.assertEqual("Invalid index", XMLObjectReader.getStartIndexFromObjectIndex("1945546"))
-        self.assertEqual("Invalid index", XMLObjectReader.getStartIndexFromObjectIndex("220"))
+        self.assertEqual("Invalid index", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("20800"))
+#        self.assertEqual("Invalid index", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("74000"))
+        self.assertEqual("Invalid index", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("1945546"))
+        self.assertEqual("Invalid index", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("220"))
 
 
         self.pasObjContainer.parseObject("74000")
-        self.assertEqual("74000", XMLObjectReader.getStartIndexFromObjectIndex("74000"))
+        self.assertEqual("74000", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("74000"))
 
 
 
