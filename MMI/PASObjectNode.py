@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from print_debug import *
+from Common.print_debug import *
 
 ENUM_TYPE_NODE_ROOT = 0
 ENUM_TYPE_NODE_OBJECT = 1

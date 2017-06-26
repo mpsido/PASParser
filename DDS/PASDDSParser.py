@@ -3,8 +3,8 @@
 
 import os
 import re
-from print_debug import *
-from PASParsedObjectContainer import *
+from Common.print_debug import *
+from DataContainers.PASParsedObjectContainer import *
 
 
 class PASDDSFileReadingException(Exception):
@@ -115,7 +115,7 @@ class PASDDSObjectParser:
         path = os.sep.join(pathInfo[:-1])
 
         if os.path.isfile(filePath) == False:
-            fileName = PASObjReader.getStartIndexFromObjectIndex(fileName)
+            fileName = XMLObjectReader.getStartIndexFromObjectIndex(fileName)
             filePath = os.sep.join([path,fileName])
 
         if os.path.isfile(filePath) == False:
@@ -231,11 +231,11 @@ class PASDDSObjectParser:
     def setDataAtId(self, objectId, newValue):
         offset = self._objectIdsList.index(objectId)
 
-        if PASObjReader.isDataValid(objectId, newValue):
+        if XMLObjectReader.isDataValid(objectId, newValue):
             self._setData(newValue, offset)
         else:
             raise PASDDSFileReadingException("Data is invalid :\nDATA     = {0}\nSPECTRUM = {1}".format(newValue,
-                    PASObjReader.spectrums[PASObjReader.getStartIndexFromObjectIndex(self.fileName)]))
+                    XMLObjectReader.spectrums[XMLObjectReader.getStartIndexFromObjectIndex(self.fileName)]))
 
     def _setData(self, newValue, offset = 0):
         self._PAS_OD_WRITE_Blocks[offset]['DATA'] = newValue

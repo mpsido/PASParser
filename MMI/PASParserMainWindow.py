@@ -7,13 +7,13 @@ from PyQt4.QtCore import QT_TR_NOOP as tr
 import sys
 import re
 import os
-from PASParsedObjectContainer import *
-from PASDDSParser import *
-from PASParserTreeModel import PASParserTreeModel,PASObjectNode
-from PASParserProxyModel import *
-from SidePanelProxyModel import *
+from DataContainers.PASParsedObjectContainer import *
+from DDS.PASDDSParser import *
+from MMI.PASParserTreeModel import PASParserTreeModel,PASObjectNode
+from MMI.PASParserProxyModel import *
+from MMI.SidePanelProxyModel import *
 
-from print_debug import *
+from Common.print_debug import *
 
 import ui_MainWindow
 
@@ -37,7 +37,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
         #temporary code for tests:
         cur_dir = os.path.dirname(os.path.realpath(__file__))
-        my_dir = os.sep.join([cur_dir, 'ECS-ELITE_1_C-1'])
+        my_dir = os.sep.join([cur_dir, '../ECS-ELITE_1_C-1'])
 
         self.loadDDS(my_dir)
 
@@ -154,7 +154,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         node = self.model[path].nodeFromIndex(index)
         id = node.pasTypeOrObject.objectIndex
         data = self.pasObjContainer[path][id].dataString
-        if PASObjReader.isDataValid(id, data):
+        if XMLObjectReader.isDataValid(id, data):
             self.ddsParser[path].setData(id, data)
             if node.nodeUpdated:
                 self.hasModifToSave[path] = True

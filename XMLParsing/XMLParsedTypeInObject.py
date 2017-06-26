@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from print_debug import *
+from Common.print_debug import *
 
 
-class PASParsedTypeInObject(object):
+class XMLParsedTypeInObject(object):
     """Class that represents a type stored inside an object:
     it keeps the indexes where the data is stored inside the object and provides tools the read and write the data"""
     def __init__(self):
-        self.objectIndex = ""
+        self.startIndex = ""
         self.nameOfField = ""
         self.typeName = ""
         self.arraySize = 0
@@ -22,12 +22,16 @@ class PASParsedTypeInObject(object):
 
     value = property(fget=_get_value, fset=_set_value)
 
+    def _get_objectIndex(self):
+        return self._motherObject.objectIndex
+    objectIndex = property(fget=_get_objectIndex)
+
     def __setitem__(self, index, newValue):
         if self.arraySize > 1:
             self._motherObject.modifyData(self.nameOfField, newValue, index)
         else:
             raise IndexError("Trying to set data {0} of type {1} but {4} is not an array in object {3}"
-                .format(index, self.typeName, self.objectIndex, self.nameOfField))
+                .format(index, self.typeName, self.startIndex, self.nameOfField))
 
     def __getitem__(self, index):
         dataValue = ""
@@ -35,11 +39,11 @@ class PASParsedTypeInObject(object):
             dataValue = self._motherObject.formatedData[self.nameOfField][index]
         else:
             raise IndexError("Trying to read data {0} of type {1} but {4} is not an array in object {3}"
-                .format(index, self.typeName, self.objectIndex, self.nameOfField))
+                .format(index, self.typeName, self.startIndex, self.nameOfField))
         return dataValue
 
-    def setInfos(self, objectIndex, nameOfField, typeName, start_pos, size, arraySize, motherObject):
-        self.objectIndex = objectIndex
+    def setInfos(self, startIndex, nameOfField, typeName, start_pos, size, arraySize, motherObject):
+        self.startIndex = startIndex
         self.nameOfField = nameOfField
         self.typeName = typeName
         self.arraySize = arraySize
