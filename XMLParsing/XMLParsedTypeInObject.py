@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from print_debug import *
+from Common.print_debug import *
 
 
 class XMLParsedTypeInObject(object):
