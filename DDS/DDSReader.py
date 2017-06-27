@@ -44,10 +44,10 @@ class DDSReader:
 
         newId = objectId
         while newId in self.objContainer:
-            newObjectId = int(objectId, 16) + 1
+            newObjectId = int(newId, 16) + 1
             newId = hex(newObjectId)[2:]
 
-        self.ddsParser.appendDataId(objectId, newId)
+        self.ddsParser.appendDataId(newId)
         newObject = self.objContainer.addIndexToObject(newId, objectId)
         newObject.readData(self.ddsParser.getData(newId))
 

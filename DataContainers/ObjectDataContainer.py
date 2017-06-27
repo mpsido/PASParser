@@ -12,7 +12,7 @@ class ObjectDataContainer:
         self._objectDatas = {} #objects of type ObjectData
 
     def __contains__(self, id):
-        return id in self._objectDatas
+        return id in self._objectDatas.keys()
 
     def isDataValid(self, objectId, data):
         return self._objectXmlReader.isDataValid(objectId, data)

@@ -45,32 +45,32 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
         self.loadDDS(str(my_dir))
 
-    def loadDDS(self, fullPath):
-        """Creates a new tab view that represents the DDS in the selected path "fullPath" """
-        if fullPath in self.pasDir:
-            print("{0}: folder already open".format(fullPath))
+    def loadDDS(self, path):
+        """Creates a new tab view that represents the DDS in the selected path "path" """
+        if path in self.pasDir:
+            print("{0}: folder already open".format(path))
             return
 
         ddsReader = DDSReader()
-        ddsReader.parse(fullPath) #raises error if the path do not exist or do not contain DDS
+        ddsReader.parse(path) #raises error if the path do not exist or do not contain DDS
 
-        self.pasDir.append(fullPath)
-        shortPath = re.split(r'[/\\]', fullPath)[-1]
+        self.pasDir.append(path)
+        shortPath = re.split(r'[/\\]', path)[-1]
 
-        self.ddsReader[fullPath] = ddsReader
+        self.ddsReader[path] = ddsReader
 
         model = PASParserTreeModel(self)
         model.dataChanged.connect(self.repaintViews)
         model.dataChanged.connect(self.updateData)
         proxyModel = PASParserProxyModel(self)
         proxyModel.setSourceModel(model)
-        self.model[fullPath] = model
-        self.proxyModel[fullPath] = proxyModel
+        self.model[path] = model
+        self.proxyModel[path] = proxyModel
         sidePanelModel = SidePanelProxyModel(self)
-        self.sidePanelModel[fullPath] = sidePanelModel
+        self.sidePanelModel[path] = sidePanelModel
         sidePanelModel.setSourceModel(model)
         treeView = QtGui.QTreeView()
-        self.treeView[fullPath] = treeView
+        self.treeView[path] = treeView
 
         treeView.setModel(proxyModel)
         treeView.setColumnWidth(0, 190)
@@ -84,12 +84,12 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
         tabIndex = self.tabWidget.addTab(treeView, shortPath)
         # we save the full path in the toolTip we are gonna need it later (we can also use tabData)
-        self.tabWidget.setTabToolTip(tabIndex, fullPath)
+        self.tabWidget.setTabToolTip(tabIndex, path)
 
         #find files whose name is a hexadecimal number
         indexes = ddsReader.getObjectIds()
         for id in indexes:
-            PASObjectNode(id, '', '', '', ObjectData(0, None), model.root)
+            PASObjectNode(id, '', '', '', ObjectData(0, self.ddsReader[path].getObject(id)), model.root)
         model.insertRows(0, len(indexes), QtCore.QModelIndex())
 
 
@@ -152,9 +152,12 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         index = self.treeView[path].indexAt(point)
         index = self.proxyModel[path].mapToSource(index)
+        print_debug("PASParserMainWindow.slot_TreeView_customContextMenuRequested at row: {0}".format(index.row()), DEBUG_MMI)
         if index.isValid():
             contextMenu = QtGui.QMenu("menu", self)
             node = self.model[path].nodeFromIndex(index)
+            print_debug("PASParserMainWindow.slot_TreeView_customContextMenuRequested {0}".format(node.id), DEBUG_MMI)
+            print_debug("PASParserMainWindow.slot_TreeView_customContextMenuRequested count: {0}".format(node.pasTypeOrObject.objectCount), DEBUG_MMI)
             if node.typeOfNode == ENUM_TYPE_NODE_OBJECT and node.pasTypeOrObject.objectCount > 1:
                 actionAdd = QtGui.QAction(tr("Add object"), self)
                 actionRemove = QtGui.QAction(tr("Remove object"), self)

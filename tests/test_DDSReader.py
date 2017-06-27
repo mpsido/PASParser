@@ -45,6 +45,8 @@ class Test_PASDDSParser(unittest.TestCase):
         for j, field in enumerate(self.ddsReader.getObject("10000").fields):
             self.ddsReader.getObject("10000")[field.nameOfField]
 
+        self.assertEqual(self.ddsReader.getObject("20000").objectCount, 2048)
+
 
     def test_readData(self):
         with self.assertRaises(KeyError):
