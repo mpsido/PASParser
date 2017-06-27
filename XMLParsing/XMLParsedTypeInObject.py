@@ -14,41 +14,13 @@ class XMLParsedTypeInObject(object):
         self.arraySize = 0
         self.size = 0
 
-    def _get_value(self):
-        return self._motherObject.formatedData[self.nameOfField]
 
-    def _set_value(self, value):
-        self._motherObject.modifyData(self.nameOfField, value)
-
-    value = property(fget=_get_value, fset=_set_value)
-
-    def _get_objectIndex(self):
-        return self._motherObject.objectIndex
-    objectIndex = property(fget=_get_objectIndex)
-
-    def __setitem__(self, index, newValue):
-        if self.arraySize > 1:
-            self._motherObject.modifyData(self.nameOfField, newValue, index)
-        else:
-            raise IndexError("Trying to set data {0} of type {1} but {4} is not an array in object {3}"
-                .format(index, self.typeName, self.startIndex, self.nameOfField))
-
-    def __getitem__(self, index):
-        dataValue = ""
-        if self.arraySize > 1:
-            dataValue = self._motherObject.formatedData[self.nameOfField][index]
-        else:
-            raise IndexError("Trying to read data {0} of type {1} but {4} is not an array in object {3}"
-                .format(index, self.typeName, self.startIndex, self.nameOfField))
-        return dataValue
-
-    def setInfos(self, startIndex, nameOfField, typeName, start_pos, size, arraySize, motherObject):
+    def setInfos(self, startIndex, nameOfField, typeName, start_pos, size, arraySize):
         self.startIndex = startIndex
         self.nameOfField = nameOfField
         self.typeName = typeName
         self.arraySize = arraySize
         self.size = size
-        self._motherObject = motherObject
         if arraySize == 1:
             print_debug("adding index {0} {1} {2}".format(typeName, start_pos, start_pos + size), DEBUG_FLAG_RANGES)
             self.range_ = (start_pos, start_pos + size - 1)
