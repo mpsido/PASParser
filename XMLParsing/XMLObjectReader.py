@@ -66,6 +66,32 @@ class XMLObjectReader:
 
         return regMatch.match(data) is not None
 
+    def getCountForObjectNode(self, xmlNode):
+        countNode = xmlNode.find('count')
+        count = 1
+        if countNode is not None and countNode.get('value') != '':
+            count = int(countNode.get('value'))
+        else:
+            elt_int_id = xmlNode.get('start_index')[2:].lower()
+            joinGroup = xmlNode.find('joinGroup')
+            if joinGroup is None:
+                print_debug("Object with id {0} has no objectCount (default value = 1)".format(elt_int_id), DEBUG_DATA_READING)
+            else:
+                joinGroup = joinGroup.get('gid')
+                print_debug("XMLObjectReader._readObjects: StartIndex {0} JoinGroup = {1}".format(elt_int_id, joinGroup), DEBUG_DATA_READING)
+                xmlRequest = "//group/objectGroup[@gid='{0}']/count".format(joinGroup)
+                print_debug('XMLObjectReader._readObjects: xml request "{0}"'.format(xmlRequest), DEBUG_DATA_READING)
+                joinGroupNode = self.OD.xpath(xmlRequest)
+                if len(joinGroupNode) > 0:
+                    count = joinGroupNode[0].get('value')
+                    if int(count) > 0:
+                        print_debug("XMLObjectReader._readObjects: xml request found {0}".format(count), DEBUG_DATA_READING)
+                        count = int(count)
+                    else:
+                        print_debug("XMLObjectReader._readObjects: StartIndex {0} has JoinGroup = {1} with count but no value in the count".format(elt_int_id, joinGroup), DEBUG_DATA_READING)
+                else:
+                    print_debug("XMLObjectReader._readObjects: StartIndex {0} has JoinGroup = {1} but no count on the joinGroup".format(elt_int_id, joinGroup), DEBUG_DATA_READING)
+        return count
 
     def _readObjects(self):
         """
@@ -88,14 +114,10 @@ class XMLObjectReader:
                     elt_int_id = elt_id[2:]
                     self._PASObjXMLDict[elt_int_id] = elt
 
-                    if elt.find('count') is not None:
-                        count = int(elt.find('count').get('value'))
-                    #TODO certains objets ont leur count défini dans le 'joinGroup'
-                    else:
-                        count = 1
+                    count = self.getCountForObjectNode(elt)
 
                     self._objectIndexRanges.append( (int(elt_int_id,16), int(elt_int_id,16) + count))
-                    print_debug("Range : {0} to {1}".format(self._objectIndexRanges[-1][0], self._objectIndexRanges[-1][1], DEBUG_FLAG_ADD_REMOVE_ELEMENTS))
+                    print_debug("Range : {0} to {1}".format(self._objectIndexRanges[-1][0], self._objectIndexRanges[-1][1]), DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
 
                     elts += elt.get('name') + " " + str(elt_id) + "\n"
                 else:
@@ -153,11 +175,8 @@ class XMLObjectReader:
             parsedObject.groupName = xmlNode.getparent().get('name')
             parsedObject.objectName = xmlNode.get('name')
             parsedObject.startIndex = xmlNode.get('start_index')[2:]
-            if xmlNode.find('count') is not None:
-                parsedObject.objectCount = int(xmlNode.find('count').get('value'))
-                #TODO certains objets ont leur count défini dans le 'joinGroup'
-            else:
-                parsedObject.objectCount = 1
+            parsedObject.objectCount = self.getCountForObjectNode(xmlNode)
+
 
             print_debug("Created a new parsedObj with id {} and startIndex {} count = {}".format(objectId,
                 parsedObject.startIndex, parsedObject.objectCount), DEBUG_FLAG_ADD_REMOVE_ELEMENTS)
