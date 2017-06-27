@@ -10,6 +10,7 @@ import os
 from Common.print_debug import *
 from DataContainers.ObjectDataContainer import *
 from DDS.PASDDSParser import *
+from DDS.DDSReader import *
 from MMI.PASParserTreeModel import PASParserTreeModel,PASObjectNode
 from MMI.PASParserProxyModel import *
 from MMI.SidePanelProxyModel import *
@@ -30,8 +31,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.treeView = {}
         self.hasModifToSave = {}
 
-        self.ddsParser = {}
-        self.pasObjContainer = {}
+        self.ddsReader = {}
 
         #temporary code for tests:
         cur_dir = os.path.dirname(os.path.realpath(__file__))
@@ -51,17 +51,17 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
             print("{0}: folder already open".format(fullPath))
             return
 
-        if os.path.isdir(fullPath) == False:
-            return
+        ddsReader = DDSReader()
+        ddsReader.parse(fullPath) #raises error if the path do not exist or do not contain DDS
 
         self.pasDir.append(fullPath)
         shortPath = re.split(r'[/\\]', fullPath)[-1]
 
-        self.pasObjContainer[fullPath] = ObjectDataContainer()
+        self.ddsReader[fullPath] = ddsReader
 
         model = PASParserTreeModel(self)
         model.dataChanged.connect(self.repaintViews)
-        model.dataChanged.connect(self.writeData)
+        model.dataChanged.connect(self.updateData)
         proxyModel = PASParserProxyModel(self)
         proxyModel.setSourceModel(model)
         self.model[fullPath] = model
@@ -77,7 +77,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         treeView.setColumnWidth(1, 190)
         treeView.setColumnWidth(2, 50)
         treeView.setColumnWidth(3, 100)
-        treeView.clicked.connect(self.constructItemChildrenAndBrothers)
+        treeView.clicked.connect(self.constructItemChildren)
 
         treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         treeView.customContextMenuRequested.connect(self.slot_TreeView_customContextMenuRequested)
@@ -87,14 +87,14 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.tabWidget.setTabToolTip(tabIndex, fullPath)
 
         #find files whose name is a hexadecimal number
-        indexes = filter(lambda x: re.match(r'^[0-9A-Fa-f]+$', x), os.listdir(fullPath))
+        indexes = ddsReader.getObjectIds()
         for id in indexes:
             PASObjectNode(id, '', '', '', ObjectData(0, None), model.root)
         model.insertRows(0, len(indexes), QtCore.QModelIndex())
 
 
     @QtCore.pyqtSlot(QtCore.QModelIndex) # signal with arguments
-    def constructItemChildrenAndBrothers(self, proxyIndex):
+    def constructItemChildren(self, proxyIndex):
         """Creates the children of an object when we click on it"""
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         index = self.proxyModel[path].mapToSource(proxyIndex)
@@ -102,40 +102,23 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         node = model.nodeFromIndex(index)
         if model.rowCount(index) == 0 and model.isChildOfRoot(index):
             objectId = node.id
-            fullPath = os.sep.join([path,objectId])
-            if path not in self.ddsParser:
-                self.ddsParser[path] = PASDDSParser()
-            self.ddsParser[path].parse(path, objectId)
+            self.ddsReader[path].readObject(objectId)
+            object = self.ddsReader[path].getObject(objectId)
 
-            for i in range(0, self.ddsParser[path].getNbObjects(objectId)):
-                if i > 0: #if the file contains many [PAS_OD_WRITE] fields
-                    nodeIdInDDS = self.ddsParser[path].getId(objectId, i)
-                    print_debug("nodeIdInDDS {0} for offset {1}, fullPath {2}".format(nodeIdInDDS, i, fullPath), DEBUG_MMI)
-                    parsedObj = self.pasObjContainer[path].addIndexToObject(nodeIdInDDS, objectId)
-                    node = PASObjectNode(nodeIdInDDS, '', '', '', parsedObj, model.root)
-                    model.insertRow(index.row() + i, QtCore.QModelIndex())
-
-                data = self.ddsParser[path].getData(objectId, i)
-                self.pasObjContainer[path].parseObject(node.id)
-                node.rangeOrObjectName = self.pasObjContainer[path][node.id].objectName
-                self.pasObjContainer[path][node.id].readData(data)
-                node.pasTypeOrObject = self.pasObjContainer[path][node.id]
-
-                for j, field in enumerate(self.pasObjContainer[path][node.id].fields):
-                    if field.arraySize == 1:
-                        PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0], field.range_[1]),
-                            field.size, field.arraySize, self.pasObjContainer[path][node.id][field.nameOfField], node)
-                    else: #in case of array append each field of the array
-                        arrayNode = PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0][0], field.range_[-1][1]),
-                            field.size, field.arraySize, self.pasObjContainer[path][node.id][field.nameOfField], node)
-                        for i in range(0, field.arraySize):
-                            PASObjectNode(field.nameOfField + "[{0}]".format(i), "byte {0} to {1}".format(field.range_[i][0], field.range_[i][1]),
-                                                field.size, field.arraySize, self.pasObjContainer[path][node.id][field.nameOfField], arrayNode)
-                        if model.insertRows(0, field.arraySize, model.index(i, 0, model.index(j, 0, index) )) == False:
-                            print("Failed to insert array rows to {0}".format(field.nameOfField))
-                if model.insertRows(0, self.pasObjContainer[path][node.id].nbFields(), index) == False:
-                    print("Failed to insert row to {0}".format(model.nodeFromIndex(index).id))
-
+            for j, field in enumerate(object.fields):
+                if field.arraySize == 1:
+                    PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0], field.range_[1]),
+                        field.size, field.arraySize, object[field.nameOfField], node)
+                else: #in case of array append each field of the array
+                    arrayNode = PASObjectNode(field.nameOfField, "byte {0} to {1}".format(field.range_[0][0], field.range_[-1][1]),
+                        field.size, field.arraySize, object[field.nameOfField], node)
+                    for i in range(0, field.arraySize):
+                        PASObjectNode(field.nameOfField + "[{0}]".format(i), "byte {0} to {1}".format(field.range_[i][0], field.range_[i][1]),
+                                            field.size, field.arraySize, object[field.nameOfField], arrayNode)
+                    if model.insertRows(0, field.arraySize, model.index(i, 0, model.index(j, 0, index) )) == False:
+                        print("Failed to insert array rows to {0}".format(field.nameOfField))
+            if model.insertRows(0, object.nbFields(), index) == False:
+                print("Failed to insert row to {0}".format(model.nodeFromIndex(index).id))
 
         elif node.typeOfNode == ENUM_TYPE_NODE_OBJECT or node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
             print_debug("Load node {0}".format(node.id), DEBUG_MMI)
@@ -146,16 +129,14 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
 
     @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex) # signal with arguments
-    def writeData(self, index, indexEnd):
+    def updateData(self, index, indexEnd):
         """Writes updated data in PAS DDS file"""
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         node = self.model[path].nodeFromIndex(index)
         id = node.pasTypeOrObject.objectIndex
-        data = self.pasObjContainer[path][id].dataString
-        if self.pasObjContainer [path].isDataValid(id, data):
-            self.ddsParser[path].setData(id, data)
-            if node.nodeUpdated:
-                self.hasModifToSave[path] = True
+        self.ddsReader[path].updateObject(id)
+        if node.nodeUpdated:
+            self.hasModifToSave[path] = True
         if self.hasModifToSave[path] == False:
             print_debug("Data at id {0} for path {1} was not modified".format(id, path), DEBUG_MMI)
 
@@ -189,33 +170,21 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         print_debug("PASParserMainWindow.item_addAction Add after {0}".format(self.actionNode.id), DEBUG_MMI)
         tabIndex = self.tabWidget.currentIndex()
         path = str(self.tabWidget.tabToolTip(tabIndex))
-        actionId = int(self.actionNode.id, 16) + 1
-        newId = hex(actionId)[2:]
-        print_debug("PASParserMainWindow.item_addAction newId = {0}".format(newId), DEBUG_MMI)
-        try:
-            parsedObj = self.pasObjContainer[path].addIndexToObject(newId, self.actionNode.id)
-        except PASParsingException as exception:
-            print_debug(exception.message, DEBUG_MMI)
-        except:
-            print_debug("Unexpected error: {0}".format(sys.exc_info()[0]), DEBUG_MMI)
-        else:
-            print_debug("PASParserMainWindow.item_addAction adding accepted", DEBUG_MMI)
-            self.ddsParser[path].appendDataId(self.actionNode.id, newId)
-            self.ddsParser[path].parse(path, self.actionNode.id)
-            self.ddsParser[path].parse(path, newId)
-            node = PASObjectNode(newId, '', '', '', parsedObj, self.model[path].root)
-            self.model[path].insertRow(self.actionIndex.row(), QtCore.QModelIndex())
-            self.hasModifToSave[path] = True
 
+        newId = self.ddsReader[path].copyObject(self.actionNode.id)
+
+        print_debug("PASParserMainWindow.item_addAction newId = {0}".format(newId), DEBUG_MMI)
+
+        node = PASObjectNode(newId, '', '', '', self.ddsReader[path].getObject(newId), self.model[path].root)
+        self.model[path].insertRow(self.actionIndex.row(), QtCore.QModelIndex())
+        self.hasModifToSave[path] = True
 
 
     def item_removeAction(self):
         print_debug("Remove {0}".format(self.actionNode.id), DEBUG_MMI)
         tabIndex = self.tabWidget.currentIndex()
         path = str(self.tabWidget.tabToolTip(tabIndex))
-        actionId = int(self.actionNode.id, 16)
-        parsedObj = self.pasObjContainer[path].removeIndexAt(self.actionNode.id)
-        self.ddsParser[path].removeDataAtId(self.actionNode.id)
+        self.ddsReader[path].removeObject(self.actionNode.id)
         self.model[path].removeRow(self.actionIndex.row(), QtCore.QModelIndex())
         self.hasModifToSave[path] = True
         # TODO: bug à la sauvegarde quand on remove tous les objects
@@ -236,7 +205,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
           bSave = QtGui.QMessageBox.question(self, tr("Save"), tr("Do you want to save data in path {0} before leaving ?").format(path),
                     QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
           if bSave == QtGui.QMessageBox.Yes:
-              self.ddsParser[path].write()
+              self.ddsReader[path].writeData()
         self.tabWidget.removeTab(tabIndex)
         self.clearViews(path)
 

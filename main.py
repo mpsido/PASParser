@@ -13,7 +13,7 @@ lib_path = os.path.abspath('XMLParsing')
 sys.path.append(lib_path)
 
 if __name__=='__main__':
-    set_debug_flags(DEBUG_DDS_OPT_PARSING | DEBUG_MMI)
+    set_debug_flags(DEBUG_MMI)
     app = QtGui.QApplication(sys.argv)
     pasParserMainWindow = PASParserMainWindow()
     pasParserMainWindow.show()

@@ -162,6 +162,10 @@ class PASDDSObjectParser:
         id = hex(int(self._PAS_OD_WRITE_Blocks[offset]['ID'].split(' ')[0], 16))[2:] #ex ID=00020004 0000 -> "20004"
         return id
 
+    def getDataAtId(self, objectId):
+        offset = self._objectIdsList.index(objectId)
+        return self.getData(offset)
+
 
     def getData(self, offset = 0):
         return self._PAS_OD_WRITE_Blocks[offset]['DATA']
@@ -297,40 +301,41 @@ class PASDDSObjectParser:
 
 class PASDDSParser:
     def __init__(self):
-        self.parsedObjects = {}
+        self.parsedFiles = {}
+        self.xmlObjectReader = XMLObjectReader()
 
     def parse(self,  path, objectId):
         print_debug("Parsing object {0} at {1}".format(objectId, path), DEBUG_DDS_OPT_PARSING)
-        if objectId in self.parsedObjects:
-            self.parsedObjects[objectId].parse(path, objectId)
+        startIndex = self.xmlObjectReader.getStartIndexFromObjectIndex(objectId)
+        if objectId in self.parsedFiles:
+            self.parsedFiles[startIndex].parse(path, objectId)
         else:
-            self.parsedObjects[objectId] = PASDDSObjectParser()
-            self.parsedObjects[objectId].parse(path, objectId)
-
-            for id in self.parsedObjects[objectId].getObjectIdList():
-                self.parsedObjects[id] = self.parsedObjects[objectId]
+            self.parsedFiles[startIndex] = PASDDSObjectParser()
+            self.parsedFiles[startIndex].parse(path, objectId)
 
     def getNbObjects(self, objectId):
-        return self.parsedObjects[objectId].nbDataId()
+        return self.parsedFiles[objectId].nbDataId()
 
     def getId(self, objectId, offset = 0):
-        return self.parsedObjects[objectId].getId(offset)
+        startIndex = self.xmlObjectReader.getStartIndexFromObjectIndex(objectId)
+        return self.parsedFiles[startIndex].getId(offset)
 
-    def getData(self, objectId, offset = 0):
-        return self.parsedObjects[objectId].getData(offset)
+    def getData(self, objectId):
+        startIndex = self.xmlObjectReader.getStartIndexFromObjectIndex(objectId)
+        return self.parsedFiles[startIndex].getDataAtId(objectId)
 
     def setData(self, objectId, data):
-        return self.parsedObjects[objectId].setDataAtId(objectId, data)
+        startIndex = self.xmlObjectReader.getStartIndexFromObjectIndex(objectId)
+        return self.parsedFiles[startIndex].setDataAtId(objectId, data)
 
     def write(self):
-        for objectId,parsedObject in self.parsedObjects.items():
-            parsedObject.write()
+        for objectId,parsedFile in self.parsedFiles.items():
+            parsedFile.write()
 
     def removeDataAtId(self, objectId):
-        self.parsedObjects[objectId].removeDataAtId(objectId)
-        self.parsedObjects.pop(objectId)
+        startIndex = self.xmlObjectReader.getStartIndexFromObjectIndex(objectId)
+        self.parsedFiles[startIndex].removeDataAtId(objectId)
 
-    def appendDataId(self, startIndex, objectId):
-        parsedObject = self.parsedObjects[startIndex]
-        parsedObject.appendDataId(objectId)
-        self.parsedObjects[objectId] = parsedObject
+    def appendDataId(self, objectId):
+        startIndex = self.xmlObjectReader.getStartIndexFromObjectIndex(objectId)
+        self.parsedFiles[startIndex].appendDataId(objectId)

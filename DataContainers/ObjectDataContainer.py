@@ -11,6 +11,9 @@ class ObjectDataContainer:
         self._objectXmlReader = XMLObjectReader()
         self._objectDatas = {} #objects of type ObjectData
 
+    def __contains__(self, id):
+        return id in self._objectDatas
+
     def isDataValid(self, objectId, data):
         return self._objectXmlReader.isDataValid(objectId, data)
 

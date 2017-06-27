@@ -16,13 +16,90 @@ from DDS.DDSReader import DDSReader
 from XMLParsing.XMLObjectReader import XMLObjectReader
 from Common.print_debug import *
 from Common.PASParsingException import PASParsingException
+from DDS.PASDDSParser import PASDDSFileReadingException
 
 
 class Test_PASDDSParser(unittest.TestCase):
     def setUp(self):
-        set_debug_flags(DEBUG_DATA_READING)
+        set_debug_flags(0)
         self.ddsReader = DDSReader()
         self.xmlReader = XMLObjectReader()
+
+    def test_dataParsing(self):
+        self.ddsReader.parse("ECS-ELITE_1_C-1")
+
+        with self.assertRaises(KeyError):
+            self.assertEqual(self.ddsReader.getObject("50508")['sub0'].value, '0D')
+
+        with self.assertRaises(KeyError):
+            self.ddsReader.getObject("50508")['eIOType'][0]
+
+        self.ddsReader.readObject("50508")
+        self.assertEqual(self.ddsReader.getObject("50508")['eIOType'][0], '00')
+        self.assertEqual(self.ddsReader.getObject("50508")['sub0'].value, '0D')
+
+        fieldNames = ['sub0', 'eEquipType', 'u8Number', 'xBaseAddress', 'eBoard_slot', 'xEAES_Used', 'eVariant', 'xSNTPMaster', 'tSubSlotType']
+        for j, field in enumerate(self.ddsReader.getObject("10000").fields):
+            self.assertEqual(field.nameOfField, fieldNames[j])
+
+        for j, field in enumerate(self.ddsReader.getObject("10000").fields):
+            self.ddsReader.getObject("10000")[field.nameOfField]
+
+
+    def test_readData(self):
+        with self.assertRaises(KeyError):
+            self.ddsReader.getObject("10000")
+
+        with self.assertRaises(KeyError):
+            self.ddsReader.getObject("74000")
+
+        self.ddsReader.parse("ECS-ELITE_1_C-1")
+
+        self.assertEqual(self.ddsReader.objContainer["10000"].dataString, "")
+        self.assertEqual(self.ddsReader.getObject("10000").readData("AA 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 00 03 000000 0B01010A 010110 000000 000000 000000 000000 00000F"),
+        {'sub0':'AA',
+        'eEquipType':'01',
+        'u8Number':'02',
+        'xBaseAddress':'0A',
+        'eBoard_slot': ['14','0D','09','00','00','00','00','00','00','00','00','00','00','00','00'],
+        'xEAES_Used':'00',
+        'eVariant':'03',
+        'xSNTPMaster':'0B01010A',
+        'tSubSlotType':['010110','000000','000000','000000','000000','00000F']})
+
+        self.assertEqual( self.ddsReader.objContainer["10000"].dataString, "AA 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 00 03 000000 0B01010A 010110 000000 000000 000000 000000 00000F")
+
+        with self.assertRaises(PASDDSFileReadingException) as exception:
+            #writing an invalid data
+            self.ddsReader.setDataInObject("10000","ACA 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 00 03 000000 0B01010A 010110 000000 000000 000000 0000 00000F")
+            self.assertEqual(exception.message, "Data is invalid :\nDATA     = ACA 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 00 03 000000 0B01010A 010110 000000 000000 000000 0000 00000F\nSPECTRUM = AA BB CC DD EE EE EE EE EE EE EE EE EE EE EE EE EE EE EE FF GG 000000 HHHHHHHH IIIIII IIIIII IIIIII IIIIII IIIIII IIIIII")
+
+
+        self.assertEqual(self.ddsReader.objContainer["10000"].dataString, "AA 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 00 03 000000 0B01010A 010110 000000 000000 000000 000000 00000F")
+
+        self.ddsReader.readObject("10000")
+
+        self.assertEqual(self.ddsReader.objContainer["10000"].dataString, "1B 01 01 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 00 03 000000 0B01010A 010110 000000 000000 000000 000000 000000")
+
+        self.assertEqual( self.ddsReader.objContainer["74000"].spectrum
+        , "AA 00 BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB CCCCCCCCCCCCCCCCCCCC")
+
+
+        self.assertEqual( self.ddsReader.getObject("74000").dataString, "")
+
+
+        self.assertEqual( self.ddsReader.getObject("93000").dataString, "")
+        self.assertEqual( self.ddsReader.getObject("93001").dataString, "")
+
+        self.ddsReader.readObject("93001")
+
+        self.assertEqual( self.ddsReader.getObject("93000").dataString, "")
+        self.assertEqual( self.ddsReader.getObject("93001").dataString, "05 01 02 00 4D00340045005600410043005F0031005F004500430053002D0045004C004900540045005F0031005F0043002D0031000000000000000000000000000000000000000000000000000000000000000000 4D0034004500560041004300000000000000")
+
+        self.ddsReader.readObject("93000")
+        self.assertEqual( self.ddsReader.getObject("93000").dataString, "05 01 01 00 4D00500045005F0031005F004500430053002D0045004C004900540045005F0031005F0043002D0031000000000000000000000000000000000000000000000000000000000000000000000000000000 4D0050004500000000000000000000000000")
+        self.assertEqual( self.ddsReader.getObject("93001").dataString, "05 01 02 00 4D00340045005600410043005F0031005F004500430053002D0045004C004900540045005F0031005F0043002D0031000000000000000000000000000000000000000000000000000000000000000000 4D0034004500560041004300000000000000")
+
 
     def test_fileList(self):
 
