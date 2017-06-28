@@ -58,31 +58,34 @@ class SidePanelProxyModel(QtGui.QSortFilterProxyModel):
         return flags
 
     def data(self, index, role):
+        variant = QVariant()
         if role != Qt.DisplayRole:
-            return self.sourceModel().data(self.mapToSource(index), role)
+            variant = self.sourceModel().data(self.mapToSource(index), role)
+        else:
+            sourceIndex = self.mapToSource(index)
+            if hasattr(self, 'currentNode'):
+                #column eName
+                if index.column() == eName:
+                    variant = QVariant(self.currentNode.childAtRow(sourceIndex.row()).id)
 
-        sourceIndex = self.mapToSource(index)
-        if hasattr(self, 'currentNode'):
-            if index.column() == eName:
-                return QVariant(self.currentNode.childAtRow(sourceIndex.row()).id)
-#                return QVariant(self.currentNode.pasTypeOrObject.nameOfField)
-            elif index.column() == eValue:
-                if self.currentNode.typeOfNode == ENUM_TYPE_NODE_OBJECT:
-                    return QVariant(self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject.value)
-                elif self.currentNode.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
-                    if len(self.currentNode) > 0:
-                        return QVariant( self.currentNode.pasTypeOrObject[sourceIndex.row()] )
+                #column eValue
+                elif index.column() == eValue:
+                    if self.currentNode.typeOfNode == ENUM_TYPE_NODE_OBJECT:
+                        variant = QVariant(self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject.displayValue())
+                    elif self.currentNode.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
+                        if self.currentNode.pasTypeOrObject.arraySize > 1:
+                            variant = QVariant( self.currentNode.pasTypeOrObject.displayValue( sourceIndex.row()) )
+                        else:
+                            variant = QVariant(self.currentNode.pasTypeOrObject.displayValue())
+
+                #column eType
+                elif index.column() == eType:
+                    if self.currentNode.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
+                        variant = QVariant(self.currentNode.pasTypeOrObject.cat)
                     else:
-                        return QVariant(self.currentNode.pasTypeOrObject.value)
-                else:
-                    return QVariant()
-            elif index.column() == eType:
-                if self.currentNode.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
-                    return QVariant(self.currentNode.pasTypeOrObject.cat)
-                else:
-                    return QVariant(self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject.cat)
-            else:
-                return QVariant()
+                        variant = QVariant(self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject.cat)
+
+        return variant
 
 
 

@@ -2,7 +2,7 @@
 from Common.print_debug import *
 
 from PyQt4.QtGui import QStyledItemDelegate, QComboBox
-from PyQt4.QtCore import QModelIndex
+from PyQt4.QtCore import QModelIndex, QVariant
 
 from PASParserTreeModel import *
 from MMI.PASObjectNode import *
@@ -28,9 +28,9 @@ class PASParserItemDelegate(QStyledItemDelegate):
                 for enumField in pasType.enumFields:
                     comboBox.addItem(enumField)
                 if pasType.arraySize == 1:
-                    comboBox.setCurrentIndex(int(pasType.value))
+                    comboBox.setCurrentIndex(int(pasType.value,16))
                 else:
-                    comboBox.setCurrentIndex(int(pasType.value[sourceIndex.row()]))
+                    comboBox.setCurrentIndex(int(pasType.value[sourceIndex.row()],16))
 
                 return comboBox
             else:
@@ -47,5 +47,12 @@ class PASParserItemDelegate(QStyledItemDelegate):
 #            super(PASParserItemDelegate, self).setEditorData(editor, index)
         super(PASParserItemDelegate, self).setEditorData(editor, index)
 
-    def setModelData(self, model, index):
-        return super(PASParserItemDelegate, self).setModelData(model, index)
+    def setModelData(self, editor, model, index):
+        sourceIndex = model.mapToSource(index)
+        pasType = self.sourceModel.nodeFromIndex(sourceIndex).pasTypeOrObject
+        print_debug("PASParserItemDelegate.setModelData cat         = {0}".format(pasType.cat), DEBUG_MMI)
+
+        if pasType.cat == "enum":
+            self.sourceModel.setData(sourceIndex, QVariant(editor.currentIndex()))
+        else:
+            super(PASParserItemDelegate, self).setModelData(editor, model, index)

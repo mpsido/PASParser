@@ -15,6 +15,28 @@ class TypeData(object):
 
     value = property(fget=_get_value, fset=_set_value)
 
+
+    def displayValue(self, index = -1):
+        displayText = ""
+        if self.arraySize == 1 and self.value != '':
+            if self.cat == "enum":
+                intIndex = int(self.value,16)
+                if intIndex >= 0 and intIndex < len(self.enumFields):
+                    displayText = self.enumFields[intIndex]
+            else:
+                displayText = self.value
+        elif self.arraySize > 1 and index != -1:
+            if self.cat == "enum" and self[index] != '':
+                intIndex = int(self[index],16)
+                if intIndex >= 0 and intIndex < len(self.enumFields):
+                    displayText = self.enumFields[intIndex]
+            else:
+                displayText = self[index]
+
+        return displayText
+
+
+
     def _get_objectIndex(self):
         return self._motherObject.objectIndex
     objectIndex = property(fget=_get_objectIndex)

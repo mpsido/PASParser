@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-from PyQt4.QtGui import QMainWindow,QTreeView, QFileDialog
+from PyQt4.QtGui import QMainWindow,QTreeView, QFileDialog, QMenu, QAction
 from PyQt4.QtCore import Qt, pyqtSlot
 from PyQt4.QtCore import QModelIndex, QPoint, QString
 from PyQt4.QtCore import QT_TR_NOOP as tr
@@ -132,7 +132,7 @@ class PASParserMainWindow(QMainWindow, ui_MainWindow.Ui_MainWindow):
                 print("Failed to insert row to {0}".format(model.nodeFromIndex(index).id))
 
         elif node.typeOfNode == ENUM_TYPE_NODE_OBJECT or node.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
-            print_debug("Load node {0}".format(node.id), DEBUG_MMI)
+            print_debug("Select node {0}".format(node.id), DEBUG_MMI)
             self.sidePanelModel[path].setCurrentNodeIndex(index)
             self.tableView.setModel(self.sidePanelModel[path])
             self.tableView.setItemDelegate(self.itemDelegate[path])
