@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from PyQt4 import QtGui, QtCore
+from PyQt4.QtGui import QSortFilterProxyModel
 #from PyQt4.QtCore import QT_TR_NOOP as tr
 from PASParserTreeModel import *
 
 
-class PASParserProxyModel(QtGui.QSortFilterProxyModel):
+class PASParserProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super(PASParserProxyModel, self).__init__(parent)
 

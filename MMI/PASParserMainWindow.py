@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 
-from PyQt4 import QtGui, QtCore
+from PyQt4.QtGui import QMainWindow,QTreeView, QFileDialog
+from PyQt4.QtCore import Qt, pyqtSlot
+from PyQt4.QtCore import QModelIndex, QPoint, QString
 from PyQt4.QtCore import QT_TR_NOOP as tr
 import sys
 import re
@@ -19,7 +21,7 @@ from Common.print_debug import *
 
 import ui_MainWindow
 
-class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
+class PASParserMainWindow(QMainWindow, ui_MainWindow.Ui_MainWindow):
     def __init__(self, parent=None):
         super(PASParserMainWindow, self).__init__(parent)
         self.setupUi(self)
@@ -39,9 +41,9 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
         self.loadDDS(my_dir)
 
-    @QtCore.pyqtSlot() # signal with no arguments
+    @pyqtSlot() # signal with no arguments
     def on_action_Import_triggered(self):
-        my_dir = QtGui.QFileDialog.getExistingDirectory(self, tr("Open a folder"), ".", QtGui.QFileDialog.ShowDirsOnly)
+        my_dir = QFileDialog.getExistingDirectory(self, tr("Open a folder"), ".", QFileDialog.ShowDirsOnly)
 
         self.loadDDS(str(my_dir))
 
@@ -69,7 +71,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         sidePanelModel = SidePanelProxyModel(self)
         self.sidePanelModel[path] = sidePanelModel
         sidePanelModel.setSourceModel(model)
-        treeView = QtGui.QTreeView()
+        treeView = QTreeView()
         self.treeView[path] = treeView
 
         treeView.setModel(proxyModel)
@@ -79,7 +81,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         treeView.setColumnWidth(3, 100)
         treeView.clicked.connect(self.constructItemChildren)
 
-        treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        treeView.setContextMenuPolicy(Qt.CustomContextMenu)
         treeView.customContextMenuRequested.connect(self.slot_TreeView_customContextMenuRequested)
 
         tabIndex = self.tabWidget.addTab(treeView, shortPath)
@@ -90,10 +92,10 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         indexes = ddsReader.getObjectIds()
         for id in indexes:
             PASObjectNode(id, '', '', '', ObjectData(0, self.ddsReader[path].getObject(id)), model.root)
-        model.insertRows(0, len(indexes), QtCore.QModelIndex())
+        model.insertRows(0, len(indexes), QModelIndex())
 
 
-    @QtCore.pyqtSlot(QtCore.QModelIndex) # signal with arguments
+    @pyqtSlot(QModelIndex) # signal with arguments
     def constructItemChildren(self, proxyIndex):
         """Creates the children of an object when we click on it"""
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
@@ -128,7 +130,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
 
 
-    @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex) # signal with arguments
+    @pyqtSlot(QModelIndex, QModelIndex) # signal with arguments
     def updateData(self, index, indexEnd):
         """Writes updated data in PAS DDS file"""
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
@@ -140,27 +142,27 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         if self.hasModifToSave[path] == False:
             print_debug("Data at id {0} for path {1} was not modified".format(id, path), DEBUG_MMI)
 
-    @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex) # signal with arguments
+    @pyqtSlot(QModelIndex, QModelIndex) # signal with arguments
     def repaintViews(self, index, indexEnd):
         """Forces table view and tree view to update when data in model had changed"""
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         self.proxyModel[path].layoutChanged.emit()
         self.sidePanelModel[path].layoutChanged.emit()
 
-    @QtCore.pyqtSlot(QtCore.QPoint) # signal with arguments
+    @pyqtSlot(QPoint) # signal with arguments
     def slot_TreeView_customContextMenuRequested(self, point):
         path = str(self.tabWidget.tabToolTip(self.tabWidget.currentIndex()))
         index = self.treeView[path].indexAt(point)
         index = self.proxyModel[path].mapToSource(index)
         print_debug("PASParserMainWindow.slot_TreeView_customContextMenuRequested at row: {0}".format(index.row()), DEBUG_MMI)
         if index.isValid():
-            contextMenu = QtGui.QMenu("menu", self)
+            contextMenu = QMenu("menu", self)
             node = self.model[path].nodeFromIndex(index)
             print_debug("PASParserMainWindow.slot_TreeView_customContextMenuRequested {0}".format(node.id), DEBUG_MMI)
             print_debug("PASParserMainWindow.slot_TreeView_customContextMenuRequested count: {0}".format(node.pasTypeOrObject.objectCount), DEBUG_MMI)
             if node.typeOfNode == ENUM_TYPE_NODE_OBJECT and node.pasTypeOrObject.objectCount > 1:
-                actionAdd = QtGui.QAction(tr("Add object"), self)
-                actionRemove = QtGui.QAction(tr("Remove object"), self)
+                actionAdd = QAction(tr("Add object"), self)
+                actionRemove = QAction(tr("Remove object"), self)
                 contextMenu.addAction(actionAdd)
                 contextMenu.addAction(actionRemove)
                 self.actionIndex = index
@@ -179,7 +181,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         print_debug("PASParserMainWindow.item_addAction newId = {0}".format(newId), DEBUG_MMI)
 
         node = PASObjectNode(newId, '', '', '', self.ddsReader[path].getObject(newId), self.model[path].root)
-        self.model[path].insertRow(self.actionIndex.row(), QtCore.QModelIndex())
+        self.model[path].insertRow(self.actionIndex.row(), QModelIndex())
         self.hasModifToSave[path] = True
 
 
@@ -188,12 +190,12 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         tabIndex = self.tabWidget.currentIndex()
         path = str(self.tabWidget.tabToolTip(tabIndex))
         self.ddsReader[path].removeObject(self.actionNode.id)
-        self.model[path].removeRow(self.actionIndex.row(), QtCore.QModelIndex())
+        self.model[path].removeRow(self.actionIndex.row(), QModelIndex())
         self.hasModifToSave[path] = True
         # TODO: bug à la sauvegarde quand on remove tous les objects
 
 
-    @QtCore.pyqtSlot(QtCore.QString) # signal with arguments
+    @pyqtSlot(QString) # signal with arguments
     def on_lineEdit_textChanged(self, qtText):
         """Called when user edits filters"""
         text = str(qtText)
@@ -201,13 +203,13 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.proxyModel[path].setFilterWildcard(qtText)
         self.proxyModel[path].setFilterRegExp(qtText)
 
-    @QtCore.pyqtSlot(int) # signal with arguments
+    @pyqtSlot(int) # signal with arguments
     def closeTab(self, tabIndex):
         path = str(self.tabWidget.tabToolTip(tabIndex))
         if path in self.hasModifToSave and self.hasModifToSave[path]:
-          bSave = QtGui.QMessageBox.question(self, tr("Save"), tr("Do you want to save data in path {0} before leaving ?").format(path),
-                    QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-          if bSave == QtGui.QMessageBox.Yes:
+          bSave = QMessageBox.question(self, tr("Save"), tr("Do you want to save data in path {0} before leaving ?").format(path),
+                    QMessageBox.Yes | QMessageBox.No)
+          if bSave == QMessageBox.Yes:
               self.ddsReader[path].writeData()
         self.tabWidget.removeTab(tabIndex)
         self.clearViews(path)
@@ -231,7 +233,7 @@ class PASParserMainWindow(QtGui.QMainWindow, ui_MainWindow.Ui_MainWindow):
 
 
 if __name__=='__main__':
-    app = QtGui.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     pasParserMainWindow = PASParserMainWindow()
     pasParserMainWindow.show()
     app.exec_()
