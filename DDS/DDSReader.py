@@ -15,7 +15,7 @@ class DDSReader:
         self.ddsParser.write()
 
     def getObject(self, objectId):
-        print_debug("DDSReader.getObject {0}".format(objectId))
+        print_debug("DDSReader.getObject {0}".format(objectId), DEBUG_DATA_READING)
         return self.objContainer[objectId]
 
     def getObjectIds(self):

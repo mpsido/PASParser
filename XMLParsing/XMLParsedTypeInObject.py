@@ -10,24 +10,37 @@ class XMLParsedTypeInObject(object):
     def __init__(self):
         self.startIndex = ""
         self.nameOfField = ""
-        self.typeName = ""
         self.arraySize = 0
-        self.size = 0
+
+    @property
+    def typeName(self):
+        return self.pasType.typeName
 
 
-    def setInfos(self, startIndex, nameOfField, typeName, start_pos, size, arraySize):
+    @property
+    def enumFields(self):
+        return self.pasType.enumFields
+
+    @property
+    def size(self):
+        return self.pasType.size
+
+    @property
+    def cat(self):
+        return self.pasType.cat
+
+    def setInfos(self, startIndex, nameOfField, start_pos, arraySize, pasType):
         self.startIndex = startIndex
         self.nameOfField = nameOfField
-        self.typeName = typeName
         self.arraySize = arraySize
-        self.size = size
+        self.pasType = pasType
         if arraySize == 1:
-            print_debug("adding index {0} {1} {2}".format(typeName, start_pos, start_pos + size), DEBUG_FLAG_RANGES)
-            self.range_ = (start_pos, start_pos + size - 1)
+            print_debug("adding index {0} {1} {2}".format(pasType.typeName, start_pos, start_pos + pasType.size), DEBUG_FLAG_RANGES)
+            self.range_ = (start_pos, start_pos + pasType.size - 1)
         else:
-            print_debug("adding array {0}".format(typeName), DEBUG_FLAG_RANGES)
+            print_debug("adding array {0}".format(pasType.typeName), DEBUG_FLAG_RANGES)
             indexes = []
             for i in range(0, arraySize):
-                indexes.append( (start_pos, start_pos + size - 1) )
-                start_pos += size
+                indexes.append( (start_pos, start_pos + pasType.size - 1) )
+                start_pos += pasType.size
             self.range_ = indexes

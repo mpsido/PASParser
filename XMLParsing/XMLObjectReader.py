@@ -8,7 +8,7 @@ This class uses object definitions from OD.xml and OD_types.xml files
 
 import re
 from Common.Singleton import *
-from PASType import *
+from XMLParsing.XMLPASType import *
 from lxml import etree
 from XMLParsing.XMLParsedObject import *
 from Common.print_debug import *
@@ -24,7 +24,7 @@ class XMLObjectReader:
 
     def __init__(self):
         self.OD = etree.parse("OD.xml")
-        self.typeReader = PASTypeReader()
+        self.typeReader = XMLPASTypeReader()
         self._PASObjXMLDict = {}     #see _readObjects documentation
         self._objectIndexRanges = [] #list of tuple for getStartIndexFromObjectIndex function
         self.PASObjectsString = ""   #see _readObjects documentation
@@ -185,7 +185,7 @@ class XMLObjectReader:
                 nameOfField = typeNode.get('name')
                 typeName = typeNode.get('type')
                 count = int(typeNode.get('count')) #longueur du tableau
-                pasType = self.typeReader.PASTypesDict[typeName]
+                pasType = self.typeReader.XMLPASTypesDict[typeName]
                 print_debug("DATA {4}:Type {0} size {1} count {2} padding {3}"
                     .format(typeName, pasType.size, count, pasType.padding, letters[l]), DEBUG_FLAG_PADDING)
                 padding = self.calculatePadding(byteNumber, pasType.padding)
@@ -198,7 +198,7 @@ class XMLObjectReader:
                     spectrum += " "
 
                 #fill in parsed object with the type we are currently parsing
-                parsedObject.addField(nameOfField, typeName, byteNumber, pasType.size, count)
+                parsedObject.addField(nameOfField, byteNumber, count, pasType)
 
                 while count > 0:
                     spectrum += pasType.spectrum.replace('X', letters[l])

@@ -53,10 +53,10 @@ class XMLParsedObject():
             description += "data     :     {0}".format(self.writeFormatedData(self.formatedData))
         return description
 
-    def addField(self, nameOfField, typeName, start_pos, size, arraySize):
+    def addField(self, nameOfField, start_pos, arraySize, pasType):
         """Adds a field in this parsed object """
         xmlParsedType = XMLParsedTypeInObject()
-        xmlParsedType.setInfos(self.startIndex, nameOfField, typeName, start_pos, size, arraySize)
+        xmlParsedType.setInfos(self.startIndex, nameOfField, start_pos, arraySize, pasType)
         self.fields.append(xmlParsedType)
 
     def nbFields(self):

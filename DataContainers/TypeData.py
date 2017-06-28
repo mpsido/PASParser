@@ -19,6 +19,19 @@ class TypeData(object):
         return self._motherObject.objectIndex
     objectIndex = property(fget=_get_objectIndex)
 
+    @property
+    def typeName(self):
+        return self.xmlParsedTypeInObject.typeName
+
+
+    @property
+    def enumFields(self):
+        return self.xmlParsedTypeInObject.enumFields
+
+
+    @property
+    def cat(self):
+        return self.xmlParsedTypeInObject.cat
 
     @property
     def nameOfField(self):

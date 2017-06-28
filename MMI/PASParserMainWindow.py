@@ -10,12 +10,12 @@ import sys
 import re
 import os
 from Common.print_debug import *
-from DataContainers.ObjectDataContainer import *
-from DDS.PASDDSParser import *
 from DDS.DDSReader import *
-from MMI.PASParserTreeModel import PASParserTreeModel,PASObjectNode
+from MMI.PASParserTreeModel import PASParserTreeModel
 from MMI.PASParserProxyModel import *
 from MMI.SidePanelProxyModel import *
+from MMI.PASParserItemDelegate import PASParserItemDelegate
+
 
 from Common.print_debug import *
 
@@ -31,9 +31,12 @@ class PASParserMainWindow(QMainWindow, ui_MainWindow.Ui_MainWindow):
         self.sidePanelModel = {}
         self.proxyModel = {}
         self.treeView = {}
+        self.itemDelegate = {}
         self.hasModifToSave = {}
 
         self.ddsReader = {}
+
+        self.tableView.setColumnWidth(2, 190)
 
         #temporary code for tests:
         cur_dir = os.path.dirname(os.path.realpath(__file__))
@@ -64,23 +67,29 @@ class PASParserMainWindow(QMainWindow, ui_MainWindow.Ui_MainWindow):
         model = PASParserTreeModel(self)
         model.dataChanged.connect(self.repaintViews)
         model.dataChanged.connect(self.updateData)
+        self.model[path] = model
+
         proxyModel = PASParserProxyModel(self)
         proxyModel.setSourceModel(model)
-        self.model[path] = model
         self.proxyModel[path] = proxyModel
+
         sidePanelModel = SidePanelProxyModel(self)
         self.sidePanelModel[path] = sidePanelModel
         sidePanelModel.setSourceModel(model)
+
+        itemDelegate = PASParserItemDelegate(self)
+        itemDelegate.sourceModel = model
+        itemDelegate.proxyModel = sidePanelModel
+        self.itemDelegate[path] = itemDelegate
+
         treeView = QTreeView()
         self.treeView[path] = treeView
-
         treeView.setModel(proxyModel)
         treeView.setColumnWidth(0, 190)
         treeView.setColumnWidth(1, 190)
         treeView.setColumnWidth(2, 50)
         treeView.setColumnWidth(3, 100)
         treeView.clicked.connect(self.constructItemChildren)
-
         treeView.setContextMenuPolicy(Qt.CustomContextMenu)
         treeView.customContextMenuRequested.connect(self.slot_TreeView_customContextMenuRequested)
 
@@ -126,6 +135,7 @@ class PASParserMainWindow(QMainWindow, ui_MainWindow.Ui_MainWindow):
             print_debug("Load node {0}".format(node.id), DEBUG_MMI)
             self.sidePanelModel[path].setCurrentNodeIndex(index)
             self.tableView.setModel(self.sidePanelModel[path])
+            self.tableView.setItemDelegate(self.itemDelegate[path])
 #            self.sidePanelModel[path].sort(0)
 
 
