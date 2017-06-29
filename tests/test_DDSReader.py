@@ -29,7 +29,13 @@ class Test_PASDDSParser(unittest.TestCase):
         self.ddsReader.parse("ECS-ELITE_1_C-1")
 
         self.ddsReader.readObject("11002")
-        self.assertEqual(self.ddsReader.getObject("11002")['xWindowSession'].getDisplay(), 'mbenthaier')
+        obj11002 = self.ddsReader.getObject("11002")
+        self.assertEqual(obj11002['xWindowSession'].getDisplay(), 'mbenthaier')
+        self.assertEqual(obj11002['xWindowSession'].convertDisplayToValue('mbenthaier'), '6D00620065006E00740068006100690065007200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
+
+        self.assertEqual(obj11002['xWindowSession'].convertDisplayToValue('coucou'),     '63006F00750063006F0075000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
+        obj11002['xWindowSession'] = obj11002['xWindowSession'].convertDisplayToValue('coucou')
+        self.assertEqual(obj11002['xWindowSession'].getDisplay(), 'coucou')
 
     def test_dataParsing(self):
         self.ddsReader.parse("ECS-ELITE_1_C-1")

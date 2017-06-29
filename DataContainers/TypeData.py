@@ -55,9 +55,11 @@ class TypeData(object):
         if varDisplayType == "hex":
             convertedValue = value
         elif varDisplayType == "text":
-            convertedValue = value.encode('hex')
+            zeroPadding = "{0:"+"<0{0}s".format(len(self.typeSpectrum))+"}"
+            convertedValue = convertedValue.join( [ letter.encode('hex').upper() + '00' for letter in list(value) ])
+            convertedValue = zeroPadding.format(convertedValue)
         elif varDisplayType == "enum":
-            convertedValue = hex(self.enumFields.index(text))[2:]
+            convertedValue = hex(self.enumFields.index(value))[2:]
         elif varDisplayType == "value":
             convertedValue = hex(int(value))[2:]
         else:

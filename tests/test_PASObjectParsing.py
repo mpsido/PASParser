@@ -447,15 +447,21 @@ class Test_ObjectDataContainer(unittest.TestCase):
         self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), 'eEQ_VARIANT_ELITE')
 
         self.pasObjContainer["10000"]['eVariant'] = "00"
+        self.assertEqual(self.pasObjContainer["10000"]['eVariant'].convertDisplayToValue('eEQ_VARIANT_NOT_APPLICABLE'), '0')
         self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), 'eEQ_VARIANT_NOT_APPLICABLE')
         self.pasObjContainer["10000"]['eVariant'] = "01"
+        self.assertEqual(self.pasObjContainer["10000"]['eVariant'].convertDisplayToValue('eEQ_VARIANT_CMSI_A'), '1')
         self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), 'eEQ_VARIANT_CMSI_A')
         self.pasObjContainer["10000"]['eVariant'] = "02"
         self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), 'eEQ_VARIANT_CMSI_B')
+        self.assertEqual(self.pasObjContainer["10000"]['eVariant'].convertDisplayToValue('eEQ_VARIANT_CMSI_B'), '2')
         self.pasObjContainer["10000"]['eVariant'] = "03"
         self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), 'eEQ_VARIANT_ELITE')
+        self.assertEqual(self.pasObjContainer["10000"]['eVariant'].convertDisplayToValue('eEQ_VARIANT_ELITE'), '3')
         self.pasObjContainer["10000"]['eVariant'] = "04"
         self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), '')
+        with self.assertRaises(ValueError):
+            self.assertEqual(self.pasObjContainer["10000"]['eVariant'].convertDisplayToValue('fsdfq'), '')
 
 
         self.assertEqual(self.pasObjContainer.parseObject("50304"), 'AA BB CCCC DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD EE FF GGGG HHHH IIII JJ KK LL LL LL LL LL LL LL LL LL LL LL LL LL LL LL LL MM MM MM MM MM MM MM MM MM MM MM MM MM MM MM MM NN')
