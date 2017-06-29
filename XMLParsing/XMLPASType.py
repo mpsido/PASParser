@@ -22,6 +22,8 @@ class XMLPASType:
         self.cat=""
         self.padding=0
         self.spectrum = ""
+        self.display = None
+
     def __repr__(self):
         return self.typeName
 
@@ -54,6 +56,7 @@ class XMLPASTypeReader:
                 pasType.typeName = elt.get('name')
                 pasType.cat = elt.get('cat')
                 pasType.size = int(elt.get('size'))
+                pasType.display = elt.get('display')
                 for i in range(0, pasType.size):
                     pasType.spectrum += "XX"
                 pasType.padding = int(elt.get('padding'))

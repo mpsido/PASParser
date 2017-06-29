@@ -87,6 +87,7 @@ class Test_ObjectDataContainer(unittest.TestCase):
         self.assertEqual(self.pasObjContainer["10000"]['tSubSlotType'][4], '000000')
         self.assertEqual(self.pasObjContainer["10000"]['tSubSlotType'][5], '000000')
 
+
     def test_11001(self):
         self.assertEqual( self.pasObjContainer.parseObject("11001")
         , "AA BBBBBBBB 00 CCCC DDDD")
@@ -424,6 +425,72 @@ class Test_ObjectDataContainer(unittest.TestCase):
         self.assertEqual("74000", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("74000"))
 
 
+    def test_getDisplay(self):
+        self.pasObjContainer.parseObject("10000")
+        self.assertDictEqual(self.pasObjContainer["10000"].readData("1B 01 02 0A 14 0D 09 00 00 00 00 00 00 00 00 00 00 00 00 00 03 000000 0B01010A 010110 000000 000000 000000 000000 000000"),
+        {'sub0':'1B',
+        'eEquipType':'01',
+        'u8Number':'02',
+        'xBaseAddress':'0A',
+        'eBoard_slot': ['14','0D','09','00','00','00','00','00','00','00','00','00','00','00','00'],
+        'xEAES_Used':'00',
+        'eVariant':'03',
+        'xSNTPMaster':'0B01010A',
+        'tSubSlotType':['010110','000000','000000','000000','000000','000000']})
+
+        self.assertEqual(self.pasObjContainer["10000"]['sub0'].getDisplay(), '27')
+        self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), 'eEQ_VARIANT_ELITE')
+
+        self.pasObjContainer["10000"]['eVariant'] = "00"
+        self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), 'eEQ_VARIANT_NOT_APPLICABLE')
+        self.pasObjContainer["10000"]['eVariant'] = "01"
+        self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), 'eEQ_VARIANT_CMSI_A')
+        self.pasObjContainer["10000"]['eVariant'] = "02"
+        self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), 'eEQ_VARIANT_CMSI_B')
+        self.pasObjContainer["10000"]['eVariant'] = "03"
+        self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), 'eEQ_VARIANT_ELITE')
+        self.pasObjContainer["10000"]['eVariant'] = "04"
+        self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), '')
+
+
+        self.assertEqual(self.pasObjContainer.parseObject("50304"), 'AA BB CCCC DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD EE FF GGGG HHHH IIII JJ KK LL LL LL LL LL LL LL LL LL LL LL LL LL LL LL LL MM MM MM MM MM MM MM MM MM MM MM MM MM MM MM MM NN')
+
+
+        self.assertDictEqual(self.pasObjContainer["50304"].readData("2B 01 0100 4C0059004E0058002D00540032004F0043004F00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 01 07 0000 0000 0000 06 03 01 01 02 02 02 02 06 07 04 05 00 00 00 00 00 00 04 04 04 04 04 04 0E 0D 0F 00 00 00 00 00 00 00 01"),
+        {'sub0': '2B',
+        'u8IconeID': '01',
+        'eDeviceType': '0100',
+        'xDeviceName': '4C0059004E0058002D00540032004F0043004F00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+        'eInterruptType': '01',
+        'u8ChannelCounter': '07',
+        'xFunction_RIDX': '0000',
+        'xCommand_RIDX': '0000',
+        'xBlock_RIDX': '0000',
+        'u8InputCounter': '06',
+        'u8OutputCounter': '03',
+        'eChannelType': ['01','01','02','02','02','02','06','07','04','05','00','00','00','00','00','00'],
+        'eIOType': ['04','04','04','04','04','04','0E','0D','0F','00','00','00','00','00','00','00'],
+        'bIsbehaviorUsed': '01'})
+
+
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(0), 'eDDS_CHANNEL_ALGO')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(1), 'eDDS_CHANNEL_ALGO')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(2), 'eDDS_CHANNEL_ANAI')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(3), 'eDDS_CHANNEL_ANAI')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(4), 'eDDS_CHANNEL_ANAI')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(5), 'eDDS_CHANNEL_ANAI')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(6), 'eDDS_CHANNEL_LEDS')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(7), 'eDDS_CHANNEL_PSUI')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(8), 'eDDS_CHANNEL_GENO')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(9), 'eDDS_CHANNEL_NOMO')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(10), 'eDDS_CHANNEL_UNDEFINED')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(11), 'eDDS_CHANNEL_UNDEFINED')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(12), 'eDDS_CHANNEL_UNDEFINED')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(13), 'eDDS_CHANNEL_UNDEFINED')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(14), 'eDDS_CHANNEL_UNDEFINED')
+        self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(15), 'eDDS_CHANNEL_UNDEFINED')
+        with self.assertRaises(IndexError):
+            self.assertEqual(self.pasObjContainer["50304"]['eChannelType'].getDisplay(16), '')
 
 
 unittest.main()

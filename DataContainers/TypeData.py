@@ -15,25 +15,47 @@ class TypeData(object):
 
     value = property(fget=_get_value, fset=_set_value)
 
-
-    def displayValue(self, index = -1):
-        displayText = ""
+    def displayEnum(self, index):
+        displayedText = ''
         if self.arraySize == 1 and self.value != '':
-            if self.cat == "enum":
                 intIndex = int(self.value,16)
                 if intIndex >= 0 and intIndex < len(self.enumFields):
-                    displayText = self.enumFields[intIndex]
-            else:
-                displayText = self.value
-        elif self.arraySize > 1 and index != -1:
-            if self.cat == "enum" and self[index] != '':
+                    displayedText = self.enumFields[intIndex]
+        elif self.arraySize > 1 and index != -1 and self[index] != '':
                 intIndex = int(self[index],16)
                 if intIndex >= 0 and intIndex < len(self.enumFields):
-                    displayText = self.enumFields[intIndex]
-            else:
-                displayText = self[index]
+                    displayedText = self.enumFields[intIndex]
+        return displayedText
 
-        return displayText
+
+    def displayIntValue(self, index):
+        displayedText = ""
+        if self.arraySize == 1 and self.value != '':
+            displayedText = int(self.value, 16)
+        elif self.arraySize > 1 and index != -1 and self[index] != '':
+            displayedText = int(self[index], 16)
+        return str(displayedText)
+
+    def defaultDisplay(self, index):
+        displayedText = ""
+        if self.arraySize == 1 and self.value != '':
+            displayedText = self.value
+        elif self.arraySize > 1 and index != -1 and self[index] != '':
+            displayedText = self[index]
+        return displayedText
+
+
+
+    def getDisplay(self, index = -1):
+        displayedText = ""
+        if self.cat == "enum":
+            displayedText = self.displayEnum(index)
+        elif self.cat == "value":
+            displayedText = self.displayIntValue(index)
+        else:
+            displayedText = self.defaultDisplay(index)
+
+        return displayedText
 
 
 
@@ -72,6 +94,10 @@ class TypeData(object):
     @property
     def range_(self):
         return self.xmlParsedTypeInObject.range_
+
+    @property
+    def display(self):
+        return self.xmlParsedTypeInObject.display
 
 
     def __setitem__(self, index, newValue):

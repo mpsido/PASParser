@@ -71,12 +71,12 @@ class SidePanelProxyModel(QtGui.QSortFilterProxyModel):
                 #column eValue
                 elif index.column() == eValue:
                     if self.currentNode.typeOfNode == ENUM_TYPE_NODE_OBJECT:
-                        variant = QVariant(self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject.displayValue())
+                        variant = QVariant(self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject.getDisplay())
                     elif self.currentNode.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
                         if self.currentNode.pasTypeOrObject.arraySize > 1:
-                            variant = QVariant( self.currentNode.pasTypeOrObject.displayValue( sourceIndex.row()) )
+                            variant = QVariant( self.currentNode.pasTypeOrObject.getDisplay( sourceIndex.row()) )
                         else:
-                            variant = QVariant(self.currentNode.pasTypeOrObject.displayValue())
+                            variant = QVariant(self.currentNode.pasTypeOrObject.getDisplay())
 
                 #column eType
                 elif index.column() == eType:

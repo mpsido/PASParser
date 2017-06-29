@@ -56,3 +56,4 @@ class PASParserItemDelegate(QStyledItemDelegate):
             self.sourceModel.setData(sourceIndex, QVariant(editor.currentIndex()))
         else:
             super(PASParserItemDelegate, self).setModelData(editor, model, index)
+        del editor
