@@ -1,5 +1,6 @@
 
 from XMLParsing.XMLParsedTypeInObject import XMLParsedTypeInObject
+from Common.print_debug import *
 
 class TypeData(object):
 
@@ -29,12 +30,16 @@ class TypeData(object):
 
 
     def displayIntValue(self, index):
-        displayedText = ""
-        if self.arraySize == 1 and self.value != '':
-            displayedText = int(self.value, 16)
-        elif self.arraySize > 1 and index != -1 and self[index] != '':
-            displayedText = int(self[index], 16)
-        return str(displayedText)
+        return str(int(self.defaultDisplay(index), 16))
+
+    def displayText(self, index):
+        encodedText = self.defaultDisplay(index)
+        decodedText = ''
+        for i in range(0, len(encodedText)/2):
+            letter = encodedText[2*i:2*i+2]
+            if letter != '00':
+                decodedText += letter.decode('hex')
+        return decodedText
 
     def defaultDisplay(self, index):
         displayedText = ""
@@ -44,19 +49,46 @@ class TypeData(object):
             displayedText = self[index]
         return displayedText
 
-
+    def convertDisplayToValue(self, value, index = -1):
+        varDisplayType = self.variableDisplayType()
+        convertedValue = ''
+        if varDisplayType == "hex":
+            convertedValue = value
+        elif varDisplayType == "text":
+            convertedValue = value.encode('hex')
+        elif varDisplayType == "enum":
+            convertedValue = hex(self.enumFields.index(text))[2:]
+        elif varDisplayType == "value":
+            convertedValue = hex(int(value))[2:]
+        else:
+            convertedValue = value
+        return convertedValue
 
     def getDisplay(self, index = -1):
         displayedText = ""
-        if self.cat == "enum":
+        varDisplayType = self.variableDisplayType()
+        if varDisplayType == "hex":
+            displayedText = self.defaultDisplay(index)
+        elif varDisplayType == "text":
+            displayedText = self.displayText(index)
+        elif varDisplayType == "enum":
             displayedText = self.displayEnum(index)
-        elif self.cat == "value":
+        elif varDisplayType == "value":
             displayedText = self.displayIntValue(index)
         else:
             displayedText = self.defaultDisplay(index)
 
         return displayedText
 
+    def variableDisplayType(self):
+        type = ''
+        if self.display == "hex16" or self.display == "hex32":
+            type = 'hex'
+        elif self.display == "text":
+            type = 'text'
+        else:
+            type = self.cat
+        return type
 
 
     def _get_objectIndex(self):
@@ -97,7 +129,12 @@ class TypeData(object):
 
     @property
     def display(self):
-        return self.xmlParsedTypeInObject.display
+        return self.xmlParsedTypeInObject.pasType.display
+
+
+    @property
+    def typeSpectrum(self):
+        return self.xmlParsedTypeInObject.pasType.typeSpectrum
 
 
     def __setitem__(self, index, newValue):

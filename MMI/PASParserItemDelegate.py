@@ -40,7 +40,7 @@ class PASParserItemDelegate(QStyledItemDelegate):
     def setEditorData(self, editor, index):
         sourceIndex = self.proxyModel.mapToSource(index)
         pasType = self.sourceModel.nodeFromIndex(sourceIndex).pasTypeOrObject
-        print_debug("PASParserItemDelegate.setEditorData cat         = {0}".format(pasType.cat), DEBUG_MMI)
+        print_debug("PASParserItemDelegate.setEditorData cat        = {0}".format(pasType.cat), DEBUG_MMI)
 #        if pasType.cat == "enum" and pasType.arraySize == 1:
 #            editor.setCurrentIndex(int(pasType.value))
 #        else:

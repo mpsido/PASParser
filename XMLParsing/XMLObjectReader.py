@@ -201,7 +201,7 @@ class XMLObjectReader:
                 parsedObject.addField(nameOfField, byteNumber, count, pasType)
 
                 while count > 0:
-                    spectrum += pasType.spectrum.replace('X', letters[l])
+                    spectrum += pasType.typeSpectrum.replace('X', letters[l])
                     count -= 1
                     spectrum += " "
                     byteNumber += pasType.size

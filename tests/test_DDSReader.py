@@ -25,6 +25,12 @@ class Test_PASDDSParser(unittest.TestCase):
         self.ddsReader = DDSReader()
         self.xmlReader = XMLObjectReader()
 
+    def test_displayValue(self):
+        self.ddsReader.parse("ECS-ELITE_1_C-1")
+
+        self.ddsReader.readObject("11002")
+        self.assertEqual(self.ddsReader.getObject("11002")['xWindowSession'].getDisplay(), 'mbenthaier')
+
     def test_dataParsing(self):
         self.ddsReader.parse("ECS-ELITE_1_C-1")
 

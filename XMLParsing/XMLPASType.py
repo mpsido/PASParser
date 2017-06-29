@@ -21,7 +21,7 @@ class XMLPASType:
         # self._size=0
         self.cat=""
         self.padding=0
-        self.spectrum = ""
+        self.typeSpectrum = ""
         self.display = None
 
     def __repr__(self):
@@ -58,7 +58,7 @@ class XMLPASTypeReader:
                 pasType.size = int(elt.get('size'))
                 pasType.display = elt.get('display')
                 for i in range(0, pasType.size):
-                    pasType.spectrum += "XX"
+                    pasType.typeSpectrum += "XX"
                 pasType.padding = int(elt.get('padding'))
                 pasType.xmlNode = elt
 

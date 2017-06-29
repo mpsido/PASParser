@@ -47,7 +47,16 @@ class SidePanelProxyModel(QtGui.QSortFilterProxyModel):
 
 
     def setData(self, index, value, role = Qt.EditRole):
-        return self.sourceModel().setData(self.mapToSource(index), value, role)
+        sourceIndex = self.mapToSource(index)
+        value = str(value.toString())
+        print_debug("SidePanelProxyModel.setData value       = {0}".format(value), DEBUG_MMI)
+        if self.currentNode.typeOfNode == ENUM_TYPE_NODE_OBJECT:
+            value = self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject.convertDisplayToValue(value)
+        elif self.currentNode.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
+            value = self.currentNode.pasTypeOrObject.convertDisplayToValue(value, sourceIndex.row())
+        else:
+            print_debug("SidePanelProxyModel.setData typeOfNode       = {0}".format(self.currentNode.typeOfNode), DEBUG_MMI)
+        return self.sourceModel().setData(self.mapToSource(index), QVariant(value), role)
 
 
     def flags(self, index):
@@ -81,9 +90,9 @@ class SidePanelProxyModel(QtGui.QSortFilterProxyModel):
                 #column eType
                 elif index.column() == eType:
                     if self.currentNode.typeOfNode == ENUM_TYPE_NODE_TYPE_IN_OBJECT:
-                        variant = QVariant(self.currentNode.pasTypeOrObject.cat)
+                        variant = QVariant(self.currentNode.pasTypeOrObject.variableDisplayType())
                     else:
-                        variant = QVariant(self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject.cat)
+                        variant = QVariant(self.currentNode.childAtRow(sourceIndex.row()).pasTypeOrObject.variableDisplayType())
 
         return variant
 

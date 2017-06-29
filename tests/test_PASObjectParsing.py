@@ -415,11 +415,15 @@ class Test_ObjectDataContainer(unittest.TestCase):
         self.assertEqual("20000", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("20047"))
 
 
+        self.assertEqual("11002", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("11002"))
+
+
         self.assertEqual("Invalid index", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("20800"))
-#        self.assertEqual("Invalid index", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("74000"))
         self.assertEqual("Invalid index", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("1945546"))
         self.assertEqual("Invalid index", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("220"))
 
+        self.assertEqual("74000", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("74000"))
+        self.assertEqual("Invalid index", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("74001"))
 
         self.pasObjContainer.parseObject("74000")
         self.assertEqual("74000", self.pasObjContainer._objectXmlReader.getStartIndexFromObjectIndex("74000"))
@@ -439,6 +443,7 @@ class Test_ObjectDataContainer(unittest.TestCase):
         'tSubSlotType':['010110','000000','000000','000000','000000','000000']})
 
         self.assertEqual(self.pasObjContainer["10000"]['sub0'].getDisplay(), '27')
+        self.assertEqual(self.pasObjContainer["10000"]['eVariant'].variableDisplayType(), 'enum')
         self.assertEqual(self.pasObjContainer["10000"]['eVariant'].getDisplay(), 'eEQ_VARIANT_ELITE')
 
         self.pasObjContainer["10000"]['eVariant'] = "00"
